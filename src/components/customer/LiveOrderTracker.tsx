@@ -12,7 +12,6 @@ import {
   ArrowLeft, 
   Share2, 
   Check, 
-  XCircle, 
   Trash2, 
   Home
 } from 'lucide-react';
@@ -74,18 +73,25 @@ export const LiveOrderTracker: React.FC = () => {
 
   useEffect(() => {
     if (!activeOrder) return;
-    const interval = setInterval(() => {
-      const start = activeOrder.prepStartedAt || activeOrder.createdAt;
+    const start = activeOrder.prepStartedAt || activeOrder.createdAt;
+
+    // Freeze timer when order is finished, served, or ready
+    if (activeOrder.status === 'served' || activeOrder.status === 'completed' || activeOrder.status === 'ready') {
+      const finishTime = activeOrder.completedAt || activeOrder.readyAt || Date.now();
+      const fixedSecs = Math.floor((finishTime - start) / 1000);
+      setElapsedSeconds(fixedSecs > 0 ? fixedSecs : 0);
+      return;
+    }
+
+    // Active real-time counter while brewing / in prep
+    const updateTime = () => {
       const secs = Math.floor((Date.now() - start) / 1000);
       setElapsedSeconds(secs > 0 ? secs : 0);
-    }, 1000);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [activeOrder]);
-
-  const handleDismissTracker = () => {
-    clearTrackedOrder();
-    setActiveView('customer');
-  };
 
   const handleBypassAndDeleteOrder = () => {
     if (!activeOrder) return;
@@ -184,16 +190,6 @@ export const LiveOrderTracker: React.FC = () => {
               ))}
             </select>
           )}
-
-          {/* Dismiss / Close Tracker Button */}
-          <button
-            onClick={handleDismissTracker}
-            className="px-3 py-1.5 rounded-xl bg-[#ede7dc] dark:bg-[#202024] text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-[#ded8ce] dark:hover:bg-[#2b2b30] border border-[#ded8ce] dark:border-[#2a2a30] flex items-center space-x-1 transition-all"
-            title="Dismiss tracker and return to menu"
-          >
-            <XCircle className="w-3.5 h-3.5" />
-            <span>Dismiss Tracker</span>
-          </button>
 
           {/* STAFF ONLY: Force Delete / Bypass Button */}
           {!isCustomer && (
@@ -371,7 +367,10 @@ export const LiveOrderTracker: React.FC = () => {
                   <span>Served & Completed. Thank you for dining with Extraction Point!</span>
                 </div>
                 <button
-                  onClick={handleDismissTracker}
+                  onClick={() => {
+                    clearTrackedOrder();
+                    setActiveView('customer');
+                  }}
                   className="px-6 py-2.5 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all shadow-md inline-flex items-center space-x-2"
                 >
                   <Home className="w-4 h-4" />

@@ -353,6 +353,100 @@ export const AnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Real-Time Sales Ledger & Completed Orders History */}
+      <div className="p-5 rounded-2xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#222226] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Receipt className="w-5 h-5 text-[#c5a880]" />
+            <div>
+              <h3 className="font-serif font-bold text-base text-[#111111] dark:text-[#f8f7f4]">
+                Sales & Order Transactions Ledger
+              </h3>
+              <p className="text-xs text-gray-500">
+                Itemized real-time record of all placed and completed customer orders
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-mono font-bold text-gray-500">
+            {orders.length} Total Orders Today
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 font-bold uppercase text-[10px]">
+                <th className="py-2.5 px-3">Order #</th>
+                <th className="py-2.5 px-3">Time</th>
+                <th className="py-2.5 px-3">Customer / Type</th>
+                <th className="py-2.5 px-3">Items Summary</th>
+                <th className="py-2.5 px-3 text-center">Payment</th>
+                <th className="py-2.5 px-3 text-center">Status</th>
+                <th className="py-2.5 px-3 text-right">Total (PHP)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
+              {orders.map((order) => {
+                const isFinished = order.status === 'served' || order.status === 'completed';
+                const itemsSummary = order.items.map((i) => `${i.quantity}x ${i.menuItem.name}`).join(', ');
+
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-[#1a1a1f] transition-colors">
+                    <td className="py-3 px-3 font-mono font-bold text-gray-900 dark:text-white">
+                      {order.orderNumber}
+                    </td>
+                    <td className="py-3 px-3 text-gray-500 text-[11px] font-mono">
+                      {new Date(order.createdAt).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="font-medium text-gray-900 dark:text-white truncate max-w-[140px]">
+                        {order.customerName}
+                      </div>
+                      <div className="text-[10px] text-gray-400">
+                        {order.type === 'dine_in' ? `Table #${order.tableNumber || 'N/A'}` : 'Takeaway'}
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-gray-600 dark:text-gray-300 max-w-[240px] truncate" title={itemsSummary}>
+                      {itemsSummary}
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase font-mono ${
+                        order.paymentMethod === 'gcash'
+                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                          : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                      }`}>
+                        {order.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        isFinished
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : order.status === 'ready'
+                          ? 'bg-emerald-500/20 text-emerald-600 animate-pulse'
+                          : 'bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]'
+                      }`}>
+                        {order.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-mono font-bold text-right text-gray-900 dark:text-white">
+                      {formatPhp(order.total)}
+                    </td>
+                  </tr>
+                );
+              })}
+              {orders.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-gray-400 text-xs">
+                    No orders recorded yet today.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Z-Reading Modal */}
       <ZReadingModal
         isOpen={isZModalOpen}
