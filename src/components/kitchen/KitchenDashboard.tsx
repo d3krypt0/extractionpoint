@@ -33,8 +33,8 @@ export const KitchenDashboard: React.FC = () => {
     if (kdsStationFilter === 'all') return list;
 
     return list.filter((order) => {
-      return order.items.some((item) => {
-        const group = item.menuItem.group;
+      return (order.items || []).some((item) => {
+        const group = item?.menuItem?.group || 'coffee';
 
         if (kdsStationFilter === 'barista') {
           return group === 'coffee';

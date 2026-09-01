@@ -1,7 +1,11 @@
 import { Order, QueueTicket } from '../types';
 import { MENU_ITEMS } from './menuData';
 
-const findItem = (id: string) => MENU_ITEMS.find((i) => i.id === id)!;
+const findItem = (id: string) => {
+  const found = MENU_ITEMS.find((i) => i.id === id);
+  if (found) return found;
+  return MENU_ITEMS[0]; // fallback safe guard
+};
 
 export const INITIAL_ORDERS: Order[] = [
   {
@@ -63,7 +67,7 @@ export const INITIAL_ORDERS: Order[] = [
       },
       {
         cartId: 'c4',
-        menuItem: findItem('croissant-ham-cheese'),
+        menuItem: findItem('croissant-ham-and-cheese'),
         quantity: 1,
         customization: {},
         unitPrice: 180,
@@ -98,7 +102,7 @@ export const INITIAL_ORDERS: Order[] = [
     items: [
       {
         cartId: 'c5',
-        menuItem: findItem('coffee-iced-spanish-latte'),
+        menuItem: findItem('iced-spanish-latte'),
         quantity: 3,
         customization: { sweetness: 75 },
         unitPrice: 140,

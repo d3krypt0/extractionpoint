@@ -192,11 +192,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
-  // Orders
+  // Orders with item validation fallback
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}orders`);
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try {
+        const parsed: Order[] = JSON.parse(saved);
+        return parsed.map((o) => ({
+          ...o,
+          items: (o.items || []).map((it) => ({
+            ...it,
+            menuItem: it.menuItem || MENU_ITEMS[0],
+          })),
+        }));
+      } catch {}
     }
     return INITIAL_ORDERS;
   });

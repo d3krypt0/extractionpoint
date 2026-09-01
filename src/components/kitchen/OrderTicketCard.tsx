@@ -103,8 +103,10 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
 
       {/* Ticket Items Checklist */}
       <div className="p-3.5 sm:p-4 space-y-2.5 flex-1 overflow-y-auto max-h-[300px]">
-        {order.items.map((item) => {
-          const isDone = !!order.itemStatuses[item.cartId];
+        {(order.items || []).map((item) => {
+          const isDone = Boolean(order.itemStatuses && order.itemStatuses[item.cartId]);
+          const itemName = item?.menuItem?.name || 'Item';
+          const categoryName = item?.menuItem?.category ? item.menuItem.category.replace('_', ' ') : 'Specialty';
 
           return (
             <div
@@ -131,34 +133,34 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
                   <span className={`text-xs font-bold text-[#111111] dark:text-[#f8f7f4] ${
                     isDone ? 'line-through text-gray-500' : ''
                   }`}>
-                    {item.quantity}x {item.menuItem.name}
+                    {item.quantity}x {itemName}
                   </span>
                   <span className="text-[10px] font-bold uppercase text-[#c5a880]">
-                    {item.menuItem.category.replace('_', ' ')}
+                    {categoryName}
                   </span>
                 </div>
 
                 {/* Modifiers */}
                 <div className="text-[11px] text-gray-600 dark:text-gray-400 space-x-1.5 flex flex-wrap mt-0.5">
-                  {item.customization.temperature && (
+                  {item.customization?.temperature && (
                     <span className="font-semibold capitalize text-blue-500 dark:text-blue-400">
                       [{item.customization.temperature}]
                     </span>
                   )}
-                  {item.customization.sweetness !== undefined && (
+                  {item.customization?.sweetness !== undefined && (
                     <span>Sugar: {item.customization.sweetness}%</span>
                   )}
-                  {item.customization.milk && item.customization.milk !== 'regular' && (
+                  {item.customization?.milk && item.customization.milk !== 'regular' && (
                     <span className="font-bold text-amber-600 dark:text-amber-400">
                       Milk: {item.customization.milk.toUpperCase()}
                     </span>
                   )}
-                  {item.customization.extraEspressoShots ? (
+                  {item.customization?.extraEspressoShots ? (
                     <span className="font-bold text-red-600 dark:text-red-400">
                       +{item.customization.extraEspressoShots} SHOT
                     </span>
                   ) : null}
-                  {item.customization.specialInstructions && (
+                  {item.customization?.specialInstructions && (
                     <span className="italic text-purple-600 dark:text-purple-400 font-medium">
                       Note: "{item.customization.specialInstructions}"
                     </span>
