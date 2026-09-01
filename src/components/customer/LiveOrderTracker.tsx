@@ -11,13 +11,25 @@ import {
   Utensils, 
   ArrowLeft,
   Share2,
-  Check
+  Check,
+  XCircle,
+  Trash2,
+  Home
 } from 'lucide-react';
 
 export const LiveOrderTracker: React.FC = () => {
-  const { orders, trackedOrderId, setTrackedOrderId, setActiveView } = useApp();
+  const { 
+    orders, 
+    trackedOrderId, 
+    setTrackedOrderId, 
+    clearTrackedOrder, 
+    deleteOrder, 
+    setActiveView 
+  } = useApp();
+
   const [showReceipt, setShowReceipt] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const activeOrder = orders.find((o) => o.id === trackedOrderId) || orders[0];
 
@@ -33,6 +45,18 @@ export const LiveOrderTracker: React.FC = () => {
     return () => clearInterval(interval);
   }, [activeOrder]);
 
+  const handleDismissTracker = () => {
+    clearTrackedOrder();
+    setActiveView('customer');
+  };
+
+  const handleBypassAndDeleteOrder = () => {
+    if (!activeOrder) return;
+    deleteOrder(activeOrder.id);
+    setShowDeleteConfirm(false);
+    setActiveView('customer');
+  };
+
   if (!activeOrder) {
     return (
       <div className="max-w-2xl mx-auto p-8 text-center space-y-4">
@@ -43,7 +67,7 @@ export const LiveOrderTracker: React.FC = () => {
           No Active Orders
         </h3>
         <p className="text-xs text-gray-500 max-w-sm mx-auto">
-          You haven't placed an order yet. Explore our handcrafted coffee, Nami matcha, and signature menu items!
+          You have no active orders being tracked. Explore our handcrafted coffee, Nami matcha, and food menu!
         </p>
         <button
           onClick={() => setActiveView('customer')}
@@ -74,6 +98,7 @@ export const LiveOrderTracker: React.FC = () => {
   };
 
   const currentStepIdx = getStepIndex(activeOrder.status);
+  const isFinished = activeOrder.status === 'served' || activeOrder.status === 'completed';
 
   const formatTimer = (totalSecs: number) => {
     const mins = Math.floor(totalSecs / 60);
@@ -91,7 +116,7 @@ export const LiveOrderTracker: React.FC = () => {
     <div className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6">
       
       {/* Top Breadcrumb & Switcher */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <button
           onClick={() => setActiveView('customer')}
           className="flex items-center space-x-1.5 text-xs font-bold text-[#666666] dark:text-[#9999a0] hover:text-black dark:hover:text-white"
@@ -100,12 +125,13 @@ export const LiveOrderTracker: React.FC = () => {
           <span>Back to Menu</span>
         </button>
 
+        {/* Action Controls */}
         <div className="flex items-center space-x-2">
           {orders.length > 1 && (
             <select
               value={activeOrder.id}
               onChange={(e) => setTrackedOrderId(e.target.value)}
-              className="px-2.5 py-1 rounded-lg bg-[#ede7dc] dark:bg-[#202024] text-[11px] font-bold border border-[#ded8ce] dark:border-[#2a2a30] text-[#111111] dark:text-white"
+              className="px-2.5 py-1.5 rounded-xl bg-[#ede7dc] dark:bg-[#202024] text-[11px] font-bold border border-[#ded8ce] dark:border-[#2a2a30] text-[#111111] dark:text-white"
             >
               {orders.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -114,6 +140,25 @@ export const LiveOrderTracker: React.FC = () => {
               ))}
             </select>
           )}
+
+          {/* Dismiss / Close Tracker Button */}
+          <button
+            onClick={handleDismissTracker}
+            className="px-3 py-1.5 rounded-xl bg-[#ede7dc] dark:bg-[#202024] text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-[#ded8ce] dark:hover:bg-[#2b2b30] border border-[#ded8ce] dark:border-[#2a2a30] flex items-center space-x-1 transition-all"
+            title="Dismiss tracker and return to menu"
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Dismiss Tracker</span>
+          </button>
+
+          {/* Barista Force Delete / Bypass */}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-colors"
+            title="Barista Bypass / Force Delete Stuck Order"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
 
           <button
             onClick={handleShare}
@@ -124,6 +169,36 @@ export const LiveOrderTracker: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Delete / Bypass Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3 animate-fadeIn">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <h4 className="font-serif font-bold text-sm text-rose-700 dark:text-rose-400">
+                Bypass & Force Clear Order {activeOrder.orderNumber}?
+              </h4>
+              <p className="text-xs text-rose-600/80 dark:text-rose-300/80">
+                This will immediately purge this stuck ticket, free up Table #{activeOrder.tableNumber || 'N/A'}, and clear the tracker badge.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleBypassAndDeleteOrder}
+              className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all"
+            >
+              Yes, Bypass & Delete Order
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-4 py-1.5 rounded-xl bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 font-bold text-xs hover:bg-gray-300 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Order Card */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#121215] shadow-xl border border-[#ded8ce] dark:border-[#242429] space-y-8">
@@ -140,6 +215,8 @@ export const LiveOrderTracker: React.FC = () => {
                   ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse'
                   : activeOrder.status === 'in_prep'
                   ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                  : activeOrder.status === 'served' || activeOrder.status === 'completed'
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
                   : 'bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]'
               }`}>
                 {activeOrder.status.replace('_', ' ')}
@@ -225,7 +302,7 @@ export const LiveOrderTracker: React.FC = () => {
           </div>
 
           {/* Current State Message */}
-          <div className="p-4 rounded-2xl bg-[#ede7dc]/70 dark:bg-[#18181d] border border-[#ded8ce] dark:border-[#28282f] text-center">
+          <div className="p-4 rounded-2xl bg-[#ede7dc]/70 dark:bg-[#18181d] border border-[#ded8ce] dark:border-[#28282f] text-center space-y-3">
             {activeOrder.status === 'placed' && (
               <p className="text-xs text-gray-700 dark:text-gray-300">
                 Your order has been transmitted to our kitchen. Baristas are preparing the ingredients!
@@ -241,10 +318,20 @@ export const LiveOrderTracker: React.FC = () => {
                 🎉 Order is ready! {activeOrder.type === 'dine_in' ? `Our staff is serving it to Table #${activeOrder.tableNumber}.` : 'Please pick it up at the counter.'}
               </p>
             )}
-            {(activeOrder.status === 'served' || activeOrder.status === 'completed') && (
-              <p className="text-xs text-gray-600 dark:text-gray-300">
-                ✨ Served & Completed. Thank you for dining with Extraction Point!
-              </p>
+            {isFinished && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center space-x-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Served & Completed. Thank you for dining with Extraction Point!</span>
+                </div>
+                <button
+                  onClick={handleDismissTracker}
+                  className="px-6 py-2.5 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all shadow-md inline-flex items-center space-x-2"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>Return to Menu / Start New Order</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

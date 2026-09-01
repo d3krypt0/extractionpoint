@@ -42,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
     soundEnabled,
     toggleSound,
     cartTotals,
+    orders,
     activeOrders,
     queue,
     trackedOrderId,
@@ -53,6 +54,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const waitingQueueCount = queue.filter((q) => q.status === 'waiting').length;
+  const activeTrackedOrder = orders.find((o) => o.id === trackedOrderId);
+  const isTrackerBadgeActive = activeTrackedOrder && activeTrackedOrder.status !== 'completed' && activeTrackedOrder.status !== 'served';
 
   const navItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'customer', fullLabel: 'Menu Ordering', shortLabel: 'Menu', icon: <Coffee className="w-4 h-4" /> },
@@ -60,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-4 h-4" /> },
     { id: 'inventory', fullLabel: 'Inventory & Waste', shortLabel: 'Inventory', icon: <Package className="w-4 h-4" /> },
     { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: trackedOrderId ? 1 : 0 },
+    { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: isTrackerBadgeActive ? 1 : 0 },
   ];
 
   return (

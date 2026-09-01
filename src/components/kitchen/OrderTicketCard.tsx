@@ -8,19 +8,22 @@ import {
   ShoppingBag, 
   Check, 
   ArrowRight, 
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 
 interface OrderTicketCardProps {
   order: Order;
   onUpdateStatus: (orderId: string, status: Order['status']) => void;
   onToggleItemCheck: (orderId: string, cartId: string) => void;
+  onDeleteOrder?: (orderId: string) => void;
 }
 
 export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
   order,
   onUpdateStatus,
   onToggleItemCheck,
+  onDeleteOrder,
 }) => {
   const [elapsedMins, setElapsedMins] = useState(0);
   const [elapsedSecs, setElapsedSecs] = useState(0);
@@ -91,12 +94,31 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
           </div>
         </div>
 
-        {/* Live Elapsed Timer */}
-        <div className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold flex items-center space-x-1 shadow-sm ${timerColor}`}>
-          <Clock className="w-3.5 h-3.5" />
-          <span>
-            {elapsedMins}:{elapsedSecs.toString().padStart(2, '0')}
-          </span>
+        <div className="flex items-center space-x-1.5 flex-shrink-0">
+          {/* Live Elapsed Timer */}
+          <div className={`px-2.5 py-1 rounded-xl text-xs font-mono font-bold flex items-center space-x-1 shadow-sm ${timerColor}`}>
+            <Clock className="w-3.5 h-3.5" />
+            <span>
+              {elapsedMins}:{elapsedSecs.toString().padStart(2, '0')}
+            </span>
+          </div>
+
+          {/* Barista Force Bypass / Delete */}
+          {onDeleteOrder && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Force bypass and clear ticket ${order.orderNumber}?`)) {
+                  onDeleteOrder(order.id);
+                }
+              }}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+              title="Force Bypass & Clear Ticket"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

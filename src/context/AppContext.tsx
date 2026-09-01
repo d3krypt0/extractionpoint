@@ -74,6 +74,8 @@ interface AppContextType {
   }) => Order;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   toggleOrderItemCheck: (orderId: string, cartId: string) => void;
+  deleteOrder: (orderId: string) => void;
+  clearTrackedOrder: () => void;
 
   // Tables
   tables: Table[];
@@ -812,6 +814,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [broadcastStateChange]
   );
 
+  // Delete / Dismiss Stuck Order (Barista bypass)
+  const deleteOrder = useCallback((orderId: string) => {
+    setOrders((prev) => {
+      const target = prev.find((o) => o.id === orderId);
+      if (target?.tableNumber) {
+        setTables((prevTables) =>
+          prevTables.map((t) =>
+            t.number === target.tableNumber
+              ? { ...t, status: 'available', activeOrderId: undefined, activeCustomerName: undefined }
+              : t
+          )
+        );
+      }
+      const updated = prev.filter((o) => o.id !== orderId);
+      localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(updated));
+      return updated;
+    });
+    setTrackedOrderId((current) => (current === orderId ? null : current));
+    broadcastStateChange('SYNC_ALL');
+  }, [broadcastStateChange]);
+
+  const clearTrackedOrder = useCallback(() => {
+    setTrackedOrderId(null);
+  }, []);
+
   // Table Management
   const updateTableStatus = useCallback(
     (tableId: string, status: TableStatus, customerName?: string) => {
@@ -1120,6 +1147,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         placeOrder,
         updateOrderStatus,
         toggleOrderItemCheck,
+        deleteOrder,
+        clearTrackedOrder,
 
         tables,
         updateTableStatus,

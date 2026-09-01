@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MENU_CATEGORIES } from '../../data/menuData';
-import { Category, MenuItem } from '../../types';
+import { Category, MenuItem, MainCategoryGroup } from '../../types';
 import { formatPhp } from '../../utils/phCurrency';
 import { ItemCustomizerModal } from './ItemCustomizerModal';
 import { TableAvailabilityMap } from './TableAvailabilityMap';
@@ -14,15 +13,130 @@ import {
   Star, 
   Coffee, 
   Leaf, 
-  Users,
-  MapPin,
-  Clock,
+  Users, 
+  MapPin, 
+  Clock, 
   ArrowRight
 } from 'lucide-react';
+
+// Section Metadata matching the exact PDF Menu Structure
+interface MenuSectionDef {
+  id: Category;
+  title: string;
+  group: MainCategoryGroup;
+  subtitle?: string;
+  pairedWith?: Category; // Paired column in 2-col editorial layout
+}
+
+const MENU_SECTIONS: MenuSectionDef[] = [
+  // FOOD
+  {
+    id: 'pasta',
+    title: 'PASTA',
+    group: 'food',
+    subtitle: 'Served with seared chicken and garlic bread.',
+    pairedWith: 'patatas',
+  },
+  {
+    id: 'patatas',
+    title: 'PATATAS ET. AL',
+    group: 'food',
+    pairedWith: 'pasta',
+  },
+  {
+    id: 'croissants',
+    title: 'CROISSANTS',
+    group: 'food',
+    subtitle: 'PS*** We source our ingredients fresh every day so you get top-notch quality in every dish. Nothing fancy, just proper food done right.',
+  },
+
+  // COFFEE
+  {
+    id: 'hot_coffee',
+    title: 'HOT COFFEE',
+    group: 'coffee',
+    pairedWith: 'iced_coffee',
+  },
+  {
+    id: 'iced_coffee',
+    title: 'ICED COFFEE',
+    group: 'coffee',
+    pairedWith: 'hot_coffee',
+  },
+  {
+    id: 'signature_drinks',
+    title: 'SIGNATURE DRINKS',
+    group: 'coffee',
+    pairedWith: 'crafted_coffee',
+  },
+  {
+    id: 'crafted_coffee',
+    title: 'CRAFTED COFFEE',
+    group: 'coffee',
+    pairedWith: 'signature_drinks',
+  },
+  {
+    id: 'half_and_half',
+    title: 'HALF & HALF',
+    group: 'coffee',
+    subtitle: 'A smooth, velvety texture and creamy richness to your iced coffee, creating a perfectly balanced sip.',
+  },
+
+  // NON-COFFEE
+  {
+    id: 'milkers',
+    title: 'MILKSERS',
+    group: 'non_coffee',
+    subtitle: 'It’s a fizzy little number with a splash of milk and a smooth, flavoured foam on top. Light, creamy, and just the thing when you’re after something refreshing but a bit different. Goes down easy and hits the spot.',
+    pairedWith: 'potions',
+  },
+  {
+    id: 'potions',
+    title: 'POTIONS',
+    group: 'non_coffee',
+    subtitle: 'A smooth, velvety texture and creamy richness to your drink, creating a perfectly balanced sip.',
+    pairedWith: 'milkers',
+  },
+  {
+    id: 'infusions',
+    title: 'INFUSIONS -TEA',
+    group: 'non_coffee',
+    pairedWith: 'elixirs',
+  },
+  {
+    id: 'elixirs',
+    title: 'ELIXIRS',
+    group: 'non_coffee',
+    pairedWith: 'infusions',
+  },
+
+  // MATCHA
+  {
+    id: 'matcha_classic',
+    title: 'CLASSIC MATCHA',
+    group: 'matcha',
+    pairedWith: 'matcha_crafted',
+  },
+  {
+    id: 'matcha_crafted',
+    title: 'CRAFTED',
+    group: 'matcha',
+    pairedWith: 'matcha_classic',
+  },
+];
+
+const MAIN_GROUPS: { id: 'all' | MainCategoryGroup; name: string; icon?: string }[] = [
+  { id: 'all', name: 'ALL MENU' },
+  { id: 'coffee', name: 'COFFEE' },
+  { id: 'matcha', name: 'MATCHA' },
+  { id: 'non_coffee', name: 'NON-COFFEE' },
+  { id: 'food', name: 'FOOD' },
+];
 
 export const CustomerView: React.FC = () => {
   const { 
     menuItems, 
+    cart,
     addToCart, 
     cartTotals, 
     tables, 
@@ -31,7 +145,8 @@ export const CustomerView: React.FC = () => {
     setActiveView 
   } = useApp();
 
-  const [activeCategory, setActiveCategory] = useState<Category>('all');
+  const [activeMainGroup, setActiveMainGroup] = useState<'all' | MainCategoryGroup>('all');
+  const [activeSubCategory, setActiveSubCategory] = useState<Category | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string>('all');
 
@@ -48,7 +163,10 @@ export const CustomerView: React.FC = () => {
   // Filtered Menu Items
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
-      if (activeCategory !== 'all' && item.category !== activeCategory) {
+      if (activeMainGroup !== 'all' && item.group !== activeMainGroup) {
+        return false;
+      }
+      if (activeSubCategory !== 'all' && item.category !== activeSubCategory) {
         return false;
       }
       if (searchQuery.trim()) {
@@ -65,7 +183,18 @@ export const CustomerView: React.FC = () => {
 
       return true;
     });
-  }, [menuItems, activeCategory, searchQuery, activeFilter]);
+  }, [menuItems, activeMainGroup, activeSubCategory, searchQuery, activeFilter]);
+
+  // Group items by category for the editorial layout
+  const itemsByCategory = useMemo(() => {
+    const map = new Map<Category, MenuItem[]>();
+    filteredItems.forEach((item) => {
+      const list = map.get(item.category) || [];
+      list.push(item);
+      map.set(item.category, list);
+    });
+    return map;
+  }, [filteredItems]);
 
   const handleQuickAdd = (item: MenuItem, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,54 +202,55 @@ export const CustomerView: React.FC = () => {
     addToCart(item, {}, 1);
   };
 
+  // Get current quantity in cart for an item
+  const getItemCartQuantity = (itemId: string) => {
+    return cart
+      .filter((ci) => ci.menuItem.id === itemId)
+      .reduce((sum, ci) => sum + ci.quantity, 0);
+  };
+
   return (
-    <div className="min-h-screen pb-28">
+    <div className="min-h-screen bg-[#faf8f5] dark:bg-[#0b0b0d] text-[#111111] dark:text-[#f5f5f7] pb-32 transition-colors">
       
-      {/* Compact Editorial Hero Banner (Optimized for Tablet & Mobile) */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#111111] via-[#161619] to-[#1c1c20] text-white py-8 sm:py-12 px-4 sm:px-6 border-b border-[#2a2a30]">
-        
-        {/* Subtle decorative glow */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#c5a880_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#c5a880]/10 rounded-full blur-3xl pointer-events-none"></div>
+      {/* Top Editorial Cover Header */}
+      <section className="border-b border-[#e6e0d5] dark:border-[#1e1e24] bg-[#f5f1ea] dark:bg-[#111114] py-8 sm:py-12 px-4 text-center">
+        <div className="max-w-4xl mx-auto space-y-3">
+          <span className="font-brand text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] text-[#888888] dark:text-[#99999f]">
+            EXTRACTION POINT • SPECIALTY COFFEE & KITCHEN
+          </span>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-3.5">
-          
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-semibold text-[#dfcca9] tracking-wider uppercase">
-            <span>Specialty Coffee • Stone-Milled Matcha • Pastas</span>
-          </div>
+          <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-[#111111] dark:text-[#ffffff] uppercase">
+            M E N U
+          </h1>
 
-          <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#fbfaf8] leading-tight">
-            Your Day Deserves <span className="text-[#c5a880] italic font-normal">Better Caffeine.</span>
-          </h2>
-          
-          <p className="text-xs sm:text-sm text-gray-300 max-w-lg mx-auto font-light leading-relaxed">
-            Crafted with Single-Origin Vietnam Arabica, Shizuoka Nami Matcha, and artisan pantry ingredients.
+          <p className="font-serif italic text-sm sm:text-base text-[#666666] dark:text-[#a0a0aa] max-w-md mx-auto">
+            "Your day deserves better caffeine."
           </p>
 
           {/* Quick Action Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <button
               onClick={() => setIsTableMapOpen(true)}
-              className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 text-xs font-bold text-white transition-all shadow-sm"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1a1a1f] border border-[#ded8ce] dark:border-[#2a2a30] text-xs font-bold text-[#111111] dark:text-white shadow-sm hover:border-[#c5a880] transition-all"
             >
-              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Tables: <strong className="text-emerald-400 font-mono">{availableTables}/12 Free</strong></span>
+              <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Tables: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{availableTables}/12 Free</strong></span>
             </button>
 
             <button
               onClick={() => setIsQueueOpen(true)}
-              className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 text-xs font-bold text-white transition-all shadow-sm"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-[#1a1a1f] border border-[#ded8ce] dark:border-[#2a2a30] text-xs font-bold text-[#111111] dark:text-white shadow-sm hover:border-[#c5a880] transition-all"
             >
-              <Users className="w-3.5 h-3.5 text-[#dfcca9]" />
-              <span>Queue: <strong className="text-[#dfcca9] font-mono">{waitingParties} waiting</strong></span>
+              <Users className="w-3.5 h-3.5 text-[#c5a880]" />
+              <span>Queue: <strong className="text-[#c5a880] font-mono">{waitingParties} waiting</strong></span>
             </button>
 
             {trackedOrderId && (
               <button
                 onClick={() => setActiveView('tracker')}
-                className="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-[#c5a880]/20 hover:bg-[#c5a880]/30 border border-[#c5a880]/40 text-xs font-bold text-[#dfcca9] transition-all animate-pulse"
+                className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black text-xs font-bold transition-all shadow-md animate-pulse"
               >
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5 text-[#c5a880]" />
                 <span>Track Active Order</span>
                 <ArrowRight className="w-3 h-3" />
               </button>
@@ -129,225 +259,279 @@ export const CustomerView: React.FC = () => {
         </div>
       </section>
 
-      {/* Specialty Highlights (Side-by-Side on Tablet) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+      {/* Navigation Controls Bar */}
+      <div className="sticky top-16 sm:top-18 z-30 bg-[#faf8f5]/95 dark:bg-[#0b0b0d]/95 backdrop-blur-md border-b border-[#e8e2d6] dark:border-[#1c1c22] shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-3 space-y-2.5">
           
-          {/* Coffee Spotlight */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#151518] shadow-md border border-[#e2dcd2] dark:border-[#26262c] flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#261710] text-[#dfcca9] flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Coffee className="w-5 h-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-xs uppercase tracking-wider text-[#111111] dark:text-[#f8f7f4]">
-                  Vietnam Arabica
-                </span>
-                <span className="text-[10px] font-bold text-[#c5a880] uppercase tracking-wider">
-                  1000+ MASL
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                Medium Dark Roast • Chocolate, Molasses & Vanilla
-              </p>
-            </div>
+          {/* Main Category Tabs (FOOD, COFFEE, NON-COFFEE, MATCHA) */}
+          <div className="flex items-center justify-start sm:justify-center space-x-1.5 sm:space-x-2 overflow-x-auto no-scrollbar py-0.5">
+            {MAIN_GROUPS.map((grp) => {
+              const isActive = activeMainGroup === grp.id;
+              return (
+                <button
+                  key={grp.id}
+                  onClick={() => {
+                    setActiveMainGroup(grp.id);
+                    setActiveSubCategory('all');
+                  }}
+                  className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-serif uppercase tracking-widest font-black whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-md scale-105'
+                      : 'bg-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                  }`}
+                >
+                  {grp.name}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Matcha Spotlight */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#151518] shadow-md border border-[#e2dcd2] dark:border-[#26262c] flex items-center space-x-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#1c2e17] text-[#84cc16] flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Leaf className="w-5 h-5" />
+          {/* Search Bar & Quick Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 border-t border-[#eee8dc] dark:border-[#1e1e24]">
+            
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search dish, bean, or drink..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white dark:bg-[#161619] border border-[#ded8ce] dark:border-[#26262b] text-xs text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880]"
+              />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-display font-bold text-xs uppercase tracking-wider text-[#111111] dark:text-[#f8f7f4]">
-                  Nami Matcha
-                </span>
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  Shizuoka, Japan
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                Single Cultivar Yabukita • 100% First Flush Harvest
-              </p>
+
+            {/* Quick Dietary Filters */}
+            <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar">
+              {[
+                { id: 'all', label: 'All' },
+                { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-3 h-3 text-amber-500" /> },
+                { id: 'signature', label: 'Signatures', icon: <Coffee className="w-3 h-3 text-[#c5a880]" /> },
+                { id: 'spicy', label: 'Spicy', icon: <Flame className="w-3 h-3 text-rose-500" /> },
+                { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-3 h-3 text-emerald-500" /> },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFilter(f.id)}
+                  className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all ${
+                    activeFilter === f.id
+                      ? 'bg-[#c5a880] text-black shadow-xs font-black'
+                      : 'bg-white/80 dark:bg-[#161619] text-gray-600 dark:text-gray-400 border border-[#ded8ce] dark:border-[#26262b]'
+                  }`}
+                >
+                  {f.icon}
+                  <span>{f.label}</span>
+                </button>
+              ))}
             </div>
+
           </div>
 
         </div>
       </div>
 
-      {/* Main Menu Catalog */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-5">
+      {/* Main Editorial Menu Content Container */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-16">
         
-        {/* Search Bar & Dietary Filter Pills */}
-        <div className="flex flex-col md:flex-row gap-3.5 items-stretch md:items-center justify-between">
+        {/* Render Each Super Category Page */}
+        {(['food', 'coffee', 'non_coffee', 'matcha'] as MainCategoryGroup[]).map((superGroup) => {
+          // If a specific main tab is active and not 'all', skip other super groups
+          if (activeMainGroup !== 'all' && activeMainGroup !== superGroup) {
+            return null;
+          }
+
+          // Get sections belonging to this super group
+          const groupSections = MENU_SECTIONS.filter((s) => s.group === superGroup);
           
-          {/* Search Input */}
-          <div className="relative flex-1 max-w-lg">
-            <Search className="w-4 h-4 text-gray-400 absolute left-4 top-3.5" />
-            <input
-              type="text"
-              placeholder="Search coffee, matcha, pasta, potions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white dark:bg-[#161619] border border-[#ded8ce] dark:border-[#26262b] text-sm font-medium text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880] shadow-sm transition-all"
-            />
-          </div>
+          // Check if there are any matching items in this super group
+          const hasItemsInGroup = groupSections.some((s) => {
+            const items = itemsByCategory.get(s.id);
+            return items && items.length > 0;
+          });
 
-          {/* Quick Filter Buttons */}
-          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
-            {[
-              { id: 'all', label: 'All Menu' },
-              { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-4 h-4 text-amber-500" /> },
-              { id: 'signature', label: 'Signatures', icon: <Coffee className="w-4 h-4 text-[#c5a880]" /> },
-              { id: 'spicy', label: 'Spicy', icon: <Flame className="w-4 h-4 text-rose-500" /> },
-              { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-4 h-4 text-emerald-500" /> },
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setActiveFilter(f.id)}
-                className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
-                  activeFilter === f.id
-                    ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-md'
-                    : 'bg-white dark:bg-[#18181c] text-[#555555] dark:text-[#9999a0] border border-[#ded8ce] dark:border-[#26262b] hover:bg-[#ede7dc]/50'
-                }`}
-              >
-                {f.icon}
-                <span>{f.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+          if (!hasItemsInGroup) return null;
 
-        {/* Category Navigation Bar (Touch-friendly scroll) */}
-        <div className="flex items-center space-x-2.5 overflow-x-auto no-scrollbar py-2.5 border-b border-[#e5dfd5] dark:border-[#222227]">
-          {MENU_CATEGORIES.map((cat) => {
-            const isCatActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id as Category)}
-                className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
-                  isCatActive
-                    ? 'bg-[#c5a880] text-black shadow-md font-black scale-105'
-                    : 'bg-white/60 dark:bg-[#161619] text-[#666666] dark:text-[#a0a0a8] hover:text-black dark:hover:text-white border border-[#e5dfd5]/60 dark:border-[#26262c]'
-                }`}
-              >
-                {cat.name}
-              </button>
-            );
-          })}
-        </div>
+          const superGroupTitle = 
+            superGroup === 'food' ? 'F O O D' :
+            superGroup === 'coffee' ? 'C O F F E E' :
+            superGroup === 'non_coffee' ? 'N O N - C O F F E E' :
+            'M A T C H A';
 
-        {/* Items Grid (Mobile-First Generous Sizing) */}
-        {filteredItems.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#26262b] space-y-3">
+          return (
+            <section key={superGroup} className="space-y-8 animate-fadeIn">
+              
+              {/* Distinctive PDF Super Header */}
+              <div className="text-center space-y-2 py-4">
+                <div className="flex items-center justify-center space-x-4">
+                  <div className="h-px bg-[#111111] dark:bg-[#f8f7f4] flex-1 max-w-[120px] opacity-40"></div>
+                  <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-[0.25em] text-[#111111] dark:text-[#f8f7f4] uppercase">
+                    {superGroupTitle}
+                  </h2>
+                  <div className="h-px bg-[#111111] dark:bg-[#f8f7f4] flex-1 max-w-[120px] opacity-40"></div>
+                </div>
+
+                {/* Shizuoka Nami Matcha Origin Story if Matcha section */}
+                {superGroup === 'matcha' && (
+                  <p className="font-serif italic text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed pt-1">
+                    Made from first flush tea leaves, carefully grown in the highlands of Shizuoka. Being stone milled, it keeps that fine, silky texture and full flavour. Rich umami, soft natural sweetness, low bitterness, with a fresh vegetal edge.
+                  </p>
+                )}
+              </div>
+
+              {/* Grid of Distinctive Black Banner Sections */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
+                {groupSections.map((section) => {
+                  const items = itemsByCategory.get(section.id) || [];
+                  if (items.length === 0) return null;
+
+                  return (
+                    <div 
+                      key={section.id} 
+                      className="space-y-4 bg-white/70 dark:bg-[#131317]/70 p-5 sm:p-6 rounded-3xl border border-[#ded8ce] dark:border-[#222227] shadow-sm hover:border-[#c5a880]/50 transition-all"
+                    >
+                      {/* Solid Black Header Banner (Signature PDF Style) */}
+                      <div className="bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black py-2.5 px-4 rounded-lg shadow-sm flex items-center justify-between">
+                        <h3 className="font-serif font-black text-sm sm:text-base tracking-[0.2em] uppercase">
+                          {section.title}
+                        </h3>
+                        <span className="text-[10px] font-mono font-bold opacity-70">
+                          {items.length} item{items.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      {/* Section Subtitle / Chef Note if present */}
+                      {section.subtitle && (
+                        <p className="font-serif italic text-xs text-gray-600 dark:text-gray-400 leading-relaxed px-1">
+                          {section.subtitle}
+                        </p>
+                      )}
+
+                      {/* Items List */}
+                      <div className="divide-y divide-[#eee7dc] dark:divide-[#202026] space-y-1">
+                        {items.map((item) => {
+                          const isSoldOut = !!item.isSoldOut;
+                          const qtyInCart = getItemCartQuantity(item.id);
+
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => !isSoldOut && setSelectedItemForCustomizer(item)}
+                              className={`pt-3 pb-3.5 first:pt-1 group cursor-pointer transition-all ${
+                                isSoldOut ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02] -mx-2 px-2 rounded-xl'
+                              }`}
+                            >
+                              {/* Top Row: Title + Price */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center space-x-1.5 flex-wrap">
+                                    <h4 className="font-serif font-bold text-base sm:text-lg text-[#111111] dark:text-[#f8f7f4] group-hover:text-[#c5a880] transition-colors leading-tight uppercase tracking-tight">
+                                      {item.name}
+                                    </h4>
+
+                                    {/* Dietary Badges */}
+                                    {item.isBestSeller && (
+                                      <span className="px-1.5 py-0.2 text-[8px] font-bold tracking-wider uppercase rounded bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                        Popular
+                                      </span>
+                                    )}
+                                    {item.isSignature && (
+                                      <span className="px-1.5 py-0.2 text-[8px] font-bold tracking-wider uppercase rounded bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]">
+                                        Signature
+                                      </span>
+                                    )}
+                                    {item.spicyLevel && item.spicyLevel > 0 && (
+                                      <span className="text-[10px]" title="Spicy">
+                                        🌶️{item.spicyLevel > 1 ? '🌶️' : ''}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Subtitle if available (e.g. UNSWEETENED, Strawberries x Superberries) */}
+                                  {item.subtitle && (
+                                    <span className="block font-brand text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-0.5">
+                                      {item.subtitle}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Price in PDF Italic Style */}
+                                <div className="text-right flex-shrink-0">
+                                  <span className="font-serif text-base sm:text-lg font-bold italic text-[#111111] dark:text-[#f8f7f4]">
+                                    {formatPhp(item.price)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Description Body */}
+                              <p className="font-brand text-xs sm:text-[13px] text-[#555555] dark:text-[#9999a0] mt-1.5 leading-relaxed font-normal">
+                                {item.description}
+                              </p>
+
+                              {/* Action Row */}
+                              <div className="flex items-center justify-between mt-2.5 pt-2">
+                                <div className="flex items-center space-x-2">
+                                  {qtyInCart > 0 && (
+                                    <span className="px-2 py-0.5 rounded-md bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-mono font-bold text-[10px]">
+                                      {qtyInCart} in cart
+                                    </span>
+                                  )}
+                                </div>
+
+                                {isSoldOut ? (
+                                  <span className="px-2 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-[10px] font-bold uppercase text-gray-500 tracking-wider">
+                                    86'd (Sold Out)
+                                  </span>
+                                ) : (
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedItemForCustomizer(item);
+                                      }}
+                                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#ede7dc] dark:bg-[#202026] text-[#444444] dark:text-[#dedede] hover:bg-[#c5a880] hover:text-black transition-colors"
+                                    >
+                                      Customize
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleQuickAdd(item, e)}
+                                      className="px-3 py-1 rounded-lg bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black text-xs font-bold inline-flex items-center space-x-1 hover:opacity-90 active:scale-95 transition-all shadow-xs"
+                                      title="Quick Add to Order"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Add</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+            </section>
+          );
+        })}
+
+        {/* Empty state */}
+        {filteredItems.length === 0 && (
+          <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#26262b] space-y-3 max-w-lg mx-auto">
             <Coffee className="w-12 h-12 text-gray-400 mx-auto" />
             <h3 className="font-serif text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-200">
               No matching items found
             </h3>
             <p className="font-brand text-xs sm:text-sm text-gray-500">
-              Try adjusting your search query or switching to another category.
+              Try clearing your search query or choosing another category above.
             </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-            {filteredItems.map((item) => {
-              const isSoldOut = !!item.isSoldOut;
-
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => !isSoldOut && setSelectedItemForCustomizer(item)}
-                  className={`group relative p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#131316] border transition-all flex flex-col justify-between ${
-                    isSoldOut
-                      ? 'opacity-60 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900/50 cursor-not-allowed'
-                      : 'border-[#ded8ce] dark:border-[#222227] hover:border-[#c5a880] dark:hover:border-[#c5a880] hover:shadow-xl hover:-translate-y-1 cursor-pointer shadow-sm'
-                  }`}
-                >
-                  {/* Card Top: Category & Badges */}
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="font-brand text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-[#c5a880]">
-                        {item.category.replace('_', ' ')}
-                      </span>
-
-                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                        {item.isBestSeller && (
-                          <span className="px-2.5 py-1 rounded-full font-brand text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-700 dark:text-amber-400">
-                            Popular
-                          </span>
-                        )}
-                        {item.isSignature && (
-                          <span className="px-2.5 py-1 rounded-full font-brand text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]">
-                            Signature
-                          </span>
-                        )}
-                        {item.spicyLevel && item.spicyLevel > 0 && (
-                          <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400">
-                            🌶️ {item.spicyLevel > 1 ? '🌶️' : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Title & Subtitle Matching PDF Menu Editorial Serif */}
-                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#111111] dark:text-[#f8f7f4] group-hover:text-[#c5a880] transition-colors leading-snug tracking-tight">
-                      {item.name}
-                    </h3>
-                    {item.subtitle && (
-                      <p className="font-brand text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase mt-1">
-                        {item.subtitle}
-                      </p>
-                    )}
-
-                    {/* Description */}
-                    <p className="font-brand text-xs sm:text-sm text-[#4a4a52] dark:text-[#a5a5b0] mt-3 line-clamp-3 leading-relaxed font-normal">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  {/* Card Bottom: Price & Clear Action Buttons */}
-                  <div className="pt-4 mt-4 border-t border-[#f0ebe3] dark:border-[#202025] flex items-center justify-between">
-                    <div>
-                      <span className="font-serif text-xl sm:text-2xl font-black italic text-[#111111] dark:text-[#f8f7f4]">
-                        {formatPhp(item.price)}
-                      </span>
-                    </div>
-
-                    {isSoldOut ? (
-                      <span className="px-3.5 py-1.5 rounded-xl bg-gray-200 dark:bg-gray-800 font-brand text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
-                        Sold Out
-                      </span>
-                    ) : (
-                      <div className="flex items-center space-x-2.5">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedItemForCustomizer(item);
-                          }}
-                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-brand text-xs sm:text-sm font-bold bg-[#ede7dc] dark:bg-[#202026] text-[#333333] dark:text-[#f0f0f0] hover:bg-[#c5a880] hover:text-black transition-all"
-                        >
-                          Customize
-                        </button>
-                        
-                        <button
-                          type="button"
-                          onClick={(e) => handleQuickAdd(item, e)}
-                          className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] inline-flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-md"
-                          title="Quick Add to Cart"
-                        >
-                          <Plus className="w-5 h-5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         )}
+
       </main>
 
       {/* Floating Bottom Cart Bar */}
@@ -355,25 +539,27 @@ export const CustomerView: React.FC = () => {
         <div className="fixed bottom-4 left-4 right-4 max-w-lg mx-auto z-40 animate-slideUp">
           <div 
             onClick={() => setIsCartOpen(true)}
-            className="p-3.5 sm:p-4 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-2xl flex items-center justify-between cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all border border-[#333338] dark:border-[#eaeaea]"
+            className="p-3.5 sm:p-4 rounded-3xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-2xl flex items-center justify-between cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all border border-[#333338] dark:border-[#eaeaea]"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-[#c5a880] text-black inline-flex items-center justify-center font-mono font-black text-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[#c5a880] text-black font-mono font-black flex items-center justify-center shadow-sm">
                 {cartTotals.itemCount}
               </div>
               <div>
-                <div className="font-bold text-xs sm:text-sm">Proceed to Checkout</div>
-                <div className="text-[11px] text-gray-400 dark:text-gray-600 font-medium">
-                  {cartTotals.itemCount} item{cartTotals.itemCount > 1 ? 's' : ''} in your order
-                </div>
+                <span className="font-serif font-bold text-sm sm:text-base block leading-tight">
+                  View Order Basket
+                </span>
+                <span className="text-[11px] text-[#c5a880] dark:text-[#8f744e] font-semibold">
+                  Tap to Review & Place Order
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <span className="font-mono text-base sm:text-lg font-black text-[#c5a880] dark:text-[#9d7f57]">
+            <div className="flex items-center space-x-2">
+              <span className="font-serif text-lg sm:text-xl font-bold italic">
                 {formatPhp(cartTotals.subtotal)}
               </span>
-              <div className="p-2 rounded-xl bg-white/10 dark:bg-black/10">
+              <div className="w-8 h-8 rounded-full bg-white/10 dark:bg-black/10 flex items-center justify-center">
                 <ArrowRight className="w-4 h-4" />
               </div>
             </div>
@@ -381,27 +567,7 @@ export const CustomerView: React.FC = () => {
         </div>
       )}
 
-      {/* Customizer Modal */}
-      <ItemCustomizerModal
-        item={selectedItemForCustomizer}
-        isOpen={!!selectedItemForCustomizer}
-        onClose={() => setSelectedItemForCustomizer(null)}
-        onAddToCart={addToCart}
-      />
-
-      {/* Table Availability Map */}
-      <TableAvailabilityMap
-        isOpen={isTableMapOpen}
-        onClose={() => setIsTableMapOpen(false)}
-      />
-
-      {/* Queue Modal */}
-      <QueueSystemModal
-        isOpen={isQueueOpen}
-        onClose={() => setIsQueueOpen(false)}
-      />
-
-      {/* Cart & Checkout Modal */}
+      {/* Global Modals */}
       <CartCheckoutModal
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -410,6 +576,28 @@ export const CustomerView: React.FC = () => {
           setIsTableMapOpen(true);
         }}
       />
+
+      <TableAvailabilityMap
+        isOpen={isTableMapOpen}
+        onClose={() => setIsTableMapOpen(false)}
+      />
+
+      <QueueSystemModal
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+      />
+
+      {/* Item Customizer Modal */}
+      <ItemCustomizerModal
+        item={selectedItemForCustomizer}
+        isOpen={!!selectedItemForCustomizer}
+        onClose={() => setSelectedItemForCustomizer(null)}
+        onAddToCart={(item, custom, qty) => {
+          addToCart(item, custom, qty);
+          setSelectedItemForCustomizer(null);
+        }}
+      />
+
     </div>
   );
 };

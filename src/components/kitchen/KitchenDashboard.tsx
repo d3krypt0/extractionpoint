@@ -17,6 +17,7 @@ export const KitchenDashboard: React.FC = () => {
     completedOrders, 
     updateOrderStatus, 
     toggleOrderItemCheck,
+    deleteOrder,
     kdsStationFilter,
     setKdsStationFilter,
     soundEnabled,
@@ -174,6 +175,7 @@ export const KitchenDashboard: React.FC = () => {
               order={order}
               onUpdateStatus={updateOrderStatus}
               onToggleItemCheck={toggleOrderItemCheck}
+              onDeleteOrder={deleteOrder}
             />
           ))}
         </div>

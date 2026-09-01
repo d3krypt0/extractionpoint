@@ -79,21 +79,12 @@ const MainLayout: React.FC = () => {
             </a>
             <span>•</span>
             <a 
-              href="https://facebook.com/ExtractionPoint" 
+              href="https://www.facebook.com/ExtractionPointPh" 
               target="_blank" 
               rel="noreferrer"
               className="hover:text-[#c5a880] transition-colors"
             >
-              Facebook: Extraction Point
-            </a>
-            <span>•</span>
-            <a 
-              href="https://tiktok.com/@ExtractionPoint" 
-              target="_blank" 
-              rel="noreferrer"
-              className="hover:text-[#c5a880] transition-colors"
-            >
-              TikTok: Extraction Point
+              Facebook: @ExtractionPointPh
             </a>
           </div>
 
