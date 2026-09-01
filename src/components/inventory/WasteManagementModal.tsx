@@ -18,7 +18,7 @@ export const WasteManagementModal: React.FC<WasteManagementModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { inventory, wasteLogs, logFoodWaste } = useApp();
+  const { inventory, wasteLogs, logFoodWaste, deleteWasteLog } = useApp();
 
   const [selectedIngredientId, setSelectedIngredientId] = useState(inventory[0]?.id || '');
   const [quantity, setQuantity] = useState<number>(1);
@@ -53,6 +53,12 @@ export const WasteManagementModal: React.FC<WasteManagementModalProps> = ({
     setNotes('');
     setQuantity(1);
     setTimeout(() => setSuccessMsg(false), 2500);
+  };
+
+  const handleDeleteLog = (logId: string, name: string) => {
+    if (window.confirm(`Delete waste record for "${name}"?`)) {
+      deleteWasteLog(logId);
+    }
   };
 
   const getReasonLabel = (r: string) => {
@@ -248,26 +254,41 @@ export const WasteManagementModal: React.FC<WasteManagementModalProps> = ({
                 <h5 className="font-bold text-xs text-[#111111] dark:text-[#f8f7f4]">
                   Recent Waste Records
                 </h5>
-                <div className="space-y-2 max-h-[220px] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800 text-xs">
-                  {wasteLogs.map((log) => (
-                    <div key={log.id} className="pt-2 flex items-start justify-between">
-                      <div>
-                        <div className="font-bold text-gray-900 dark:text-gray-100">
-                          {log.quantity} {log.unit} • {log.itemName}
+                {wasteLogs.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-gray-400">
+                    No waste recorded yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800 text-xs">
+                    {wasteLogs.map((log) => (
+                      <div key={log.id} className="pt-2 flex items-start justify-between group">
+                        <div>
+                          <div className="font-bold text-gray-900 dark:text-gray-100">
+                            {log.quantity} {log.unit} • {log.itemName}
+                          </div>
+                          <div className="text-[10px] text-gray-500">
+                            {getReasonLabel(log.reason)} ({log.loggedBy})
+                          </div>
+                          {log.notes && (
+                            <div className="text-[10px] italic text-gray-400">"{log.notes}"</div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-gray-500">
-                          {getReasonLabel(log.reason)} ({log.loggedBy})
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono font-bold text-rose-500">
+                            -{formatPhp(log.costPhp)}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteLog(log.id, log.itemName)}
+                            className="text-gray-400 hover:text-rose-500 transition-colors p-1"
+                            title="Delete log"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        {log.notes && (
-                          <div className="text-[10px] italic text-gray-400">"{log.notes}"</div>
-                        )}
                       </div>
-                      <span className="font-mono font-bold text-rose-500">
-                        -{formatPhp(log.costPhp)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
             </div>

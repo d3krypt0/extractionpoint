@@ -154,15 +154,17 @@ export interface Order {
   notes?: string;
 }
 
+export type InventoryCategory = 'coffee' | 'dairy' | 'tea_matcha' | 'syrup_flavor' | 'food_ingredient' | 'packaging';
+
 export interface InventoryItem {
   id: string;
   name: string;
-  category: 'coffee' | 'dairy' | 'tea_matcha' | 'syrup_flavor' | 'food_ingredient' | 'packaging';
+  category: InventoryCategory;
   currentStock: number;
   unit: string;
   minThreshold: number;
   unitCostPhp: number;
-  lastRestocked: number;
+  lastRestocked?: number;
 }
 
 export interface WasteLog {

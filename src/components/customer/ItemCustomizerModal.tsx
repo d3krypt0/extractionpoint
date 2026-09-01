@@ -89,26 +89,26 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
         </div>
 
         {/* Scrollable Customization Body */}
-        <div className="p-5 overflow-y-auto space-y-6 flex-1 text-sm">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-sm">
           
           {/* Description */}
-          <p className="text-xs text-[#555555] dark:text-[#a0a0a5] leading-relaxed italic">
+          <p className="text-xs sm:text-sm text-[#555555] dark:text-[#a0a0a5] leading-relaxed italic">
             "{item.description}"
           </p>
 
           {/* Temperature Option */}
           {allowsTemp && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-2.5">
+              <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-2.5">
                 Temperature Preference
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setTemperature('iced')}
-                  className={`flex items-center justify-center space-x-2 py-2.5 rounded-xl border font-medium transition-all ${
+                  className={`flex items-center justify-center space-x-2 py-3 rounded-2xl border font-bold text-xs sm:text-sm transition-all ${
                     temperature === 'iced'
-                      ? 'border-[#111111] dark:border-[#f8f7f4] bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm font-semibold'
+                      ? 'border-[#111111] dark:border-[#f8f7f4] bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm font-bold'
                       : 'border-[#ded8ce] dark:border-[#2a2a30] text-[#555555] dark:text-[#aaaaaf] hover:bg-[#eae4db]/50 dark:hover:bg-[#222226]'
                   }`}
                 >
@@ -118,9 +118,9 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setTemperature('hot')}
-                  className={`flex items-center justify-center space-x-2 py-2.5 rounded-xl border font-medium transition-all ${
+                  className={`flex items-center justify-center space-x-2 py-3 rounded-2xl border font-bold text-xs sm:text-sm transition-all ${
                     temperature === 'hot'
-                      ? 'border-[#111111] dark:border-[#f8f7f4] bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm font-semibold'
+                      ? 'border-[#111111] dark:border-[#f8f7f4] bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm font-bold'
                       : 'border-[#ded8ce] dark:border-[#2a2a30] text-[#555555] dark:text-[#aaaaaf] hover:bg-[#eae4db]/50 dark:hover:bg-[#222226]'
                   }`}
                 >
@@ -135,20 +135,20 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
           {allowsSweetness && (
             <div>
               <div className="flex justify-between items-center mb-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede]">
+                <label className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede]">
                   Sweetness Level
                 </label>
-                <span className="text-xs font-bold text-[#c5a880]">{sweetness}% Sugar</span>
+                <span className="text-xs sm:text-sm font-bold text-[#c5a880]">{sweetness}% Sugar</span>
               </div>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-5 gap-2">
                 {([0, 25, 50, 75, 100] as SweetnessLevel[]).map((level) => (
                   <button
                     key={level}
                     type="button"
                     onClick={() => setSweetness(level)}
-                    className={`py-2 rounded-lg text-xs font-medium border text-center transition-all ${
+                    className={`py-2.5 rounded-xl text-xs sm:text-sm font-bold border text-center transition-all ${
                       sweetness === level
-                        ? 'border-[#c5a880] bg-[#c5a880] text-black font-bold shadow-sm'
+                        ? 'border-[#c5a880] bg-[#c5a880] text-black font-black shadow-sm'
                         : 'border-[#ded8ce] dark:border-[#2a2a30] text-[#555555] dark:text-[#9999a0] hover:border-[#c5a880]/50'
                     }`}
                   >
@@ -162,10 +162,10 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
           {/* Milk Substitute */}
           {allowsMilk && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-2.5">
+              <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-2.5">
                 Milk Selection
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {[
                   { id: 'regular', name: 'Fresh Dairy Barista Milk', cost: 0 },
                   { id: 'oat', name: 'Barista Oat Milk', cost: 50 },
@@ -177,22 +177,22 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
                     key={opt.id}
                     type="button"
                     onClick={() => setMilk(opt.id as MilkOption)}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
+                    className={`flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all ${
                       milk === opt.id
-                        ? 'border-[#111111] dark:border-[#dfcca9] bg-[#ece6dc] dark:bg-[#1e1e23] font-medium'
+                        ? 'border-[#111111] dark:border-[#dfcca9] bg-[#ece6dc] dark:bg-[#1e1e23] font-bold'
                         : 'border-[#ded8ce] dark:border-[#2a2a30] text-[#555555] dark:text-[#9999a0] hover:bg-[#eae4db]/40 dark:hover:bg-[#1c1c20]'
                     }`}
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2.5">
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                         milk === opt.id ? 'border-[#c5a880] bg-[#c5a880]' : 'border-gray-400'
                       }`}>
                         {milk === opt.id && <Check className="w-2.5 h-2.5 text-black" />}
                       </div>
-                      <span className="text-xs text-[#111111] dark:text-[#f0f0f4]">{opt.name}</span>
+                      <span className="text-xs sm:text-sm text-[#111111] dark:text-[#f0f0f4]">{opt.name}</span>
                     </div>
                     {opt.cost > 0 && (
-                      <span className="text-xs font-bold text-[#c5a880]">+{formatPhp(opt.cost)}</span>
+                      <span className="text-xs sm:text-sm font-bold text-[#c5a880]">+{formatPhp(opt.cost)}</span>
                     )}
                   </button>
                 ))}
@@ -202,35 +202,35 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
 
           {/* Extra Espresso Shot Add-on */}
           {allowsExtraShot && (
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#ede8e0] dark:bg-[#19191d] border border-[#ded8cf] dark:border-[#28282e]">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#ede8e0] dark:bg-[#19191d] border border-[#ded8cf] dark:border-[#28282e]">
               <div>
                 <div className="flex items-center space-x-1.5">
                   <Coffee className="w-4 h-4 text-[#c5a880]" />
-                  <span className="text-xs font-bold text-[#111111] dark:text-[#f8f7f4]">
+                  <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#f8f7f4]">
                     Extra Espresso Shot
                   </span>
                 </div>
-                <p className="text-[11px] text-[#666666] dark:text-[#999999] mt-0.5">
+                <p className="text-[11px] sm:text-xs text-[#666666] dark:text-[#999999] mt-0.5">
                   Single shot Vietnam Arabica (+₱80 / shot)
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2.5">
                 <button
                   type="button"
                   onClick={() => setExtraShots((prev) => Math.max(0, prev - 1))}
-                  className="w-7 h-7 rounded-full bg-[#ded8cf] dark:bg-[#2b2b30] flex items-center justify-center text-xs hover:bg-[#c5a880] hover:text-black transition-colors"
+                  className="w-8 h-8 rounded-full bg-[#ded8cf] dark:bg-[#2b2b30] flex items-center justify-center text-xs hover:bg-[#c5a880] hover:text-black transition-colors"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
-                <span className="font-mono font-bold text-sm w-5 text-center text-[#111111] dark:text-white">
+                <span className="font-mono font-bold text-sm sm:text-base w-6 text-center text-[#111111] dark:text-white">
                   {extraShots}
                 </span>
                 <button
                   type="button"
                   onClick={() => setExtraShots((prev) => Math.min(3, prev + 1))}
-                  className="w-7 h-7 rounded-full bg-[#ded8cf] dark:bg-[#2b2b30] flex items-center justify-center text-xs hover:bg-[#c5a880] hover:text-black transition-colors"
+                  className="w-8 h-8 rounded-full bg-[#ded8cf] dark:bg-[#2b2b30] flex items-center justify-center text-xs hover:bg-[#c5a880] hover:text-black transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -238,12 +238,12 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
 
           {/* Horchata Dirty Shot Option */}
           {item.id === 'potion-horchata' && (
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#ede8e0] dark:bg-[#19191d] border border-[#ded8cf] dark:border-[#28282e]">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-[#ede8e0] dark:bg-[#19191d] border border-[#ded8cf] dark:border-[#28282e]">
               <div>
-                <span className="text-xs font-bold text-[#111111] dark:text-[#f8f7f4]">
+                <span className="text-xs sm:text-sm font-bold text-[#111111] dark:text-[#f8f7f4]">
                   Make it Dirty (+ Espresso Shot)
                 </span>
-                <p className="text-[11px] text-[#666666] dark:text-[#999999]">
+                <p className="text-[11px] sm:text-xs text-[#666666] dark:text-[#999999]">
                   Adds a rich shot of espresso to your Horchata (+₱80)
                 </p>
               </div>
@@ -258,7 +258,7 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
 
           {/* Special Preparation Instructions */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-1.5">
+            <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider text-[#333333] dark:text-[#dedede] mb-1.5">
               Special Instructions
             </label>
             <input
@@ -266,7 +266,7 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
               placeholder="e.g. Less ice, extra hot, dressing on side..."
               value={specialInstructions}
               onChange={(e) => setSpecialInstructions(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#18181b] border border-[#ded8ce] dark:border-[#2a2a30] text-xs text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880]"
+              className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-[#18181b] border border-[#ded8ce] dark:border-[#2a2a30] text-xs sm:text-sm text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880]"
             />
           </div>
         </div>
@@ -275,21 +275,21 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
         <div className="p-4 sm:p-5 border-t border-[#e8e2d8] dark:border-[#222226] bg-[#f5f1ea] dark:bg-[#16161a] flex items-center justify-between">
           
           {/* Quantity Controls */}
-          <div className="flex items-center space-x-2 bg-white dark:bg-[#1f1f24] p-1 rounded-xl border border-[#ded8ce] dark:border-[#2e2e34]">
+          <div className="flex items-center space-x-2 bg-white dark:bg-[#1f1f24] p-1.5 rounded-2xl border border-[#ded8ce] dark:border-[#2e2e34]">
             <button
               type="button"
               onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-700 active:scale-95 transition-all"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="font-mono font-bold text-sm text-[#111111] dark:text-white w-7 text-center">
+            <span className="font-mono font-bold text-sm sm:text-base text-[#111111] dark:text-white w-7 text-center">
               {quantity}
             </span>
             <button
               type="button"
               onClick={() => setQuantity((prev) => prev + 1)}
-              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+              className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-200 inline-flex items-center justify-center hover:bg-gray-200 dark:hover:bg-zinc-700 active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -299,10 +299,10 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
           <button
             type="button"
             onClick={handleAdd}
-            className="flex-1 ml-4 py-3 px-5 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] font-bold text-xs sm:text-sm flex items-center justify-between hover:opacity-95 active:scale-[0.98] transition-all shadow-md"
+            className="flex-1 ml-4 py-3.5 px-5 sm:px-6 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] font-bold text-xs sm:text-sm flex items-center justify-between hover:opacity-95 active:scale-[0.98] transition-all shadow-md"
           >
             <span>Add to Order</span>
-            <span className="font-mono">{formatPhp(totalPrice)}</span>
+            <span className="font-mono font-bold">{formatPhp(totalPrice)}</span>
           </button>
         </div>
       </div>

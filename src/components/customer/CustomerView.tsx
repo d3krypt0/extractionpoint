@@ -180,36 +180,36 @@ export const CustomerView: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-5">
         
         {/* Search Bar & Dietary Filter Pills */}
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-3.5 items-stretch md:items-center justify-between">
           
           {/* Search Input */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+          <div className="relative flex-1 max-w-lg">
+            <Search className="w-4 h-4 text-gray-400 absolute left-4 top-3.5" />
             <input
               type="text"
               placeholder="Search coffee, matcha, pasta, potions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-[#161619] border border-[#ded8ce] dark:border-[#26262b] text-xs font-medium text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880] shadow-sm transition-all"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white dark:bg-[#161619] border border-[#ded8ce] dark:border-[#26262b] text-sm font-medium text-[#111111] dark:text-[#f8f7f4] focus:outline-none focus:border-[#c5a880] shadow-sm transition-all"
             />
           </div>
 
           {/* Quick Filter Buttons */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
             {[
               { id: 'all', label: 'All Menu' },
-              { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-3.5 h-3.5 text-amber-500" /> },
-              { id: 'signature', label: 'Signatures', icon: <Coffee className="w-3.5 h-3.5 text-[#c5a880]" /> },
-              { id: 'spicy', label: 'Spicy', icon: <Flame className="w-3.5 h-3.5 text-rose-500" /> },
-              { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-3.5 h-3.5 text-emerald-500" /> },
+              { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-4 h-4 text-amber-500" /> },
+              { id: 'signature', label: 'Signatures', icon: <Coffee className="w-4 h-4 text-[#c5a880]" /> },
+              { id: 'spicy', label: 'Spicy', icon: <Flame className="w-4 h-4 text-rose-500" /> },
+              { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-4 h-4 text-emerald-500" /> },
             ].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id)}
-                className={`inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
                   activeFilter === f.id
-                    ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-sm'
-                    : 'bg-white dark:bg-[#18181c] text-[#555555] dark:text-[#9999a0] border border-[#ded8ce] dark:border-[#26262b] hover:bg-[#ede7dc]/40'
+                    ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-md'
+                    : 'bg-white dark:bg-[#18181c] text-[#555555] dark:text-[#9999a0] border border-[#ded8ce] dark:border-[#26262b] hover:bg-[#ede7dc]/50'
                 }`}
               >
                 {f.icon}
@@ -219,18 +219,18 @@ export const CustomerView: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Navigation Bar */}
-        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-2 border-b border-[#e5dfd5] dark:border-[#222227]">
+        {/* Category Navigation Bar (Touch-friendly scroll) */}
+        <div className="flex items-center space-x-2.5 overflow-x-auto no-scrollbar py-2.5 border-b border-[#e5dfd5] dark:border-[#222227]">
           {MENU_CATEGORIES.map((cat) => {
             const isCatActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id as Category)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
                   isCatActive
-                    ? 'bg-[#c5a880] text-black shadow-sm font-black'
-                    : 'bg-transparent text-[#666666] dark:text-[#a0a0a8] hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    ? 'bg-[#c5a880] text-black shadow-md font-black scale-105'
+                    : 'bg-white/60 dark:bg-[#161619] text-[#666666] dark:text-[#a0a0a8] hover:text-black dark:hover:text-white border border-[#e5dfd5]/60 dark:border-[#26262c]'
                 }`}
               >
                 {cat.name}
@@ -239,19 +239,19 @@ export const CustomerView: React.FC = () => {
           })}
         </div>
 
-        {/* Items Grid (Optimized for Tablet & Desktop) */}
+        {/* Items Grid (Mobile-First Generous Sizing) */}
         {filteredItems.length === 0 ? (
           <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#26262b] space-y-3">
-            <Coffee className="w-10 h-10 text-gray-400 mx-auto" />
-            <h3 className="font-serif text-xl font-bold text-gray-700 dark:text-gray-200">
+            <Coffee className="w-12 h-12 text-gray-400 mx-auto" />
+            <h3 className="font-serif text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-200">
               No matching items found
             </h3>
-            <p className="font-brand text-xs text-gray-500">
+            <p className="font-brand text-xs sm:text-sm text-gray-500">
               Try adjusting your search query or switching to another category.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredItems.map((item) => {
               const isSoldOut = !!item.isSoldOut;
 
@@ -259,32 +259,32 @@ export const CustomerView: React.FC = () => {
                 <div
                   key={item.id}
                   onClick={() => !isSoldOut && setSelectedItemForCustomizer(item)}
-                  className={`group relative p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#131316] border transition-all flex flex-col justify-between ${
+                  className={`group relative p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#131316] border transition-all flex flex-col justify-between ${
                     isSoldOut
                       ? 'opacity-60 border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-zinc-900/50 cursor-not-allowed'
-                      : 'border-[#ded8ce] dark:border-[#222227] hover:border-[#c5a880] dark:hover:border-[#c5a880] hover:shadow-lg hover:-translate-y-0.5 cursor-pointer shadow-sm'
+                      : 'border-[#ded8ce] dark:border-[#222227] hover:border-[#c5a880] dark:hover:border-[#c5a880] hover:shadow-xl hover:-translate-y-1 cursor-pointer shadow-sm'
                   }`}
                 >
                   {/* Card Top: Category & Badges */}
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-2.5">
-                      <span className="font-brand text-[9px] font-bold uppercase tracking-[0.2em] text-[#c5a880]">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="font-brand text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-[#c5a880]">
                         {item.category.replace('_', ' ')}
                       </span>
 
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
                         {item.isBestSeller && (
-                          <span className="px-2 py-0.5 rounded-full font-brand text-[8.5px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                          <span className="px-2.5 py-1 rounded-full font-brand text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-amber-500/15 text-amber-700 dark:text-amber-400">
                             Popular
                           </span>
                         )}
                         {item.isSignature && (
-                          <span className="px-2 py-0.5 rounded-full font-brand text-[8.5px] font-bold tracking-wider uppercase bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]">
+                          <span className="px-2.5 py-1 rounded-full font-brand text-[9px] sm:text-[10px] font-bold tracking-wider uppercase bg-[#c5a880]/20 text-[#8f744e] dark:text-[#dfcca9]">
                             Signature
                           </span>
                         )}
                         {item.spicyLevel && item.spicyLevel > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400">
+                          <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400">
                             🌶️ {item.spicyLevel > 1 ? '🌶️' : ''}
                           </span>
                         )}
@@ -292,42 +292,42 @@ export const CustomerView: React.FC = () => {
                     </div>
 
                     {/* Title & Subtitle Matching PDF Menu Editorial Serif */}
-                    <h3 className="font-serif font-bold text-lg sm:text-xl text-[#111111] dark:text-[#f8f7f4] group-hover:text-[#c5a880] transition-colors leading-snug tracking-tight">
+                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#111111] dark:text-[#f8f7f4] group-hover:text-[#c5a880] transition-colors leading-snug tracking-tight">
                       {item.name}
                     </h3>
                     {item.subtitle && (
-                      <p className="font-brand text-[10px] text-gray-500 dark:text-gray-400 font-semibold tracking-wider uppercase mt-0.5">
+                      <p className="font-brand text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase mt-1">
                         {item.subtitle}
                       </p>
                     )}
 
                     {/* Description */}
-                    <p className="font-brand text-xs text-[#555555] dark:text-[#9999a0] mt-2.5 line-clamp-3 leading-relaxed font-normal">
+                    <p className="font-brand text-xs sm:text-sm text-[#4a4a52] dark:text-[#a5a5b0] mt-3 line-clamp-3 leading-relaxed font-normal">
                       {item.description}
                     </p>
                   </div>
 
                   {/* Card Bottom: Price & Clear Action Buttons */}
-                  <div className="pt-3.5 mt-3.5 border-t border-[#f0ebe3] dark:border-[#202025] flex items-center justify-between">
+                  <div className="pt-4 mt-4 border-t border-[#f0ebe3] dark:border-[#202025] flex items-center justify-between">
                     <div>
-                      <span className="font-serif text-lg sm:text-xl font-bold italic text-[#111111] dark:text-[#f8f7f4]">
+                      <span className="font-serif text-xl sm:text-2xl font-black italic text-[#111111] dark:text-[#f8f7f4]">
                         {formatPhp(item.price)}
                       </span>
                     </div>
 
                     {isSoldOut ? (
-                      <span className="px-2.5 py-1 rounded-lg bg-gray-200 dark:bg-gray-800 font-brand text-[9px] font-bold uppercase tracking-wider text-gray-500">
+                      <span className="px-3.5 py-1.5 rounded-xl bg-gray-200 dark:bg-gray-800 font-brand text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">
                         Sold Out
                       </span>
                     ) : (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2.5">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedItemForCustomizer(item);
                           }}
-                          className="px-3 py-1.5 rounded-xl font-brand text-xs font-bold bg-[#ede7dc] dark:bg-[#1f1f24] text-[#444444] dark:text-[#dedede] hover:bg-[#c5a880] hover:text-black transition-colors"
+                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-brand text-xs sm:text-sm font-bold bg-[#ede7dc] dark:bg-[#202026] text-[#333333] dark:text-[#f0f0f0] hover:bg-[#c5a880] hover:text-black transition-all"
                         >
                           Customize
                         </button>
@@ -335,10 +335,10 @@ export const CustomerView: React.FC = () => {
                         <button
                           type="button"
                           onClick={(e) => handleQuickAdd(item, e)}
-                          className="w-8 h-8 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] inline-flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                          className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] inline-flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-md"
                           title="Quick Add to Cart"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-5 h-5" />
                         </button>
                       </div>
                     )}

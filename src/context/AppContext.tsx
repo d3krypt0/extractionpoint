@@ -96,6 +96,9 @@ interface AppContextType {
   // Inventory & Waste
   inventory: InventoryItem[];
   restockInventory: (ingredientId: string, quantityToAdd: number) => void;
+  updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
+  addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
+  deleteInventoryItem: (id: string) => void;
   wasteLogs: WasteLog[];
   logFoodWaste: (log: {
     itemId: string;
@@ -107,6 +110,7 @@ interface AppContextType {
     loggedBy: string;
     notes?: string;
   }) => void;
+  deleteWasteLog: (logId: string) => void;
 
   // Analytics & Z-Reading
   zReports: ZReadingReport[];
@@ -906,8 +910,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Inventory Restock
   const restockInventory = useCallback(
     (ingredientId: string, quantityToAdd: number) => {
-      setInventory((prev) =>
-        prev.map((item) =>
+      setInventory((prev) => {
+        const next = prev.map((item) =>
           item.id === ingredientId
             ? {
                 ...item,
@@ -915,8 +919,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 lastRestocked: Date.now(),
               }
             : item
-        )
-      );
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}inventory`, JSON.stringify(next));
+        return next;
+      });
+      broadcastStateChange('SYNC_ALL');
+    },
+    [broadcastStateChange]
+  );
+
+  // Manual update of inventory item (stock level, min threshold, unit cost, name, etc.)
+  const updateInventoryItem = useCallback(
+    (id: string, updates: Partial<InventoryItem>) => {
+      setInventory((prev) => {
+        const next = prev.map((item) =>
+          item.id === id ? { ...item, ...updates } : item
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}inventory`, JSON.stringify(next));
+        return next;
+      });
+      broadcastStateChange('SYNC_ALL');
+    },
+    [broadcastStateChange]
+  );
+
+  // Add New Inventory Item
+  const addInventoryItem = useCallback(
+    (newItemData: Omit<InventoryItem, 'id'>) => {
+      const newId = `ing-${Date.now()}`;
+      const item: InventoryItem = {
+        id: newId,
+        ...newItemData,
+        lastRestocked: Date.now(),
+      };
+      setInventory((prev) => {
+        const next = [item, ...prev];
+        localStorage.setItem(`${STORAGE_PREFIX}inventory`, JSON.stringify(next));
+        return next;
+      });
+      broadcastStateChange('SYNC_ALL');
+    },
+    [broadcastStateChange]
+  );
+
+  // Delete Inventory Item
+  const deleteInventoryItem = useCallback(
+    (id: string) => {
+      setInventory((prev) => {
+        const next = prev.filter((item) => item.id !== id);
+        localStorage.setItem(`${STORAGE_PREFIX}inventory`, JSON.stringify(next));
+        return next;
+      });
       broadcastStateChange('SYNC_ALL');
     },
     [broadcastStateChange]
@@ -940,20 +993,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ...log,
       };
 
-      setWasteLogs((prev) => [newLog, ...prev]);
+      setWasteLogs((prev) => {
+        const next = [newLog, ...prev];
+        localStorage.setItem(`${STORAGE_PREFIX}waste`, JSON.stringify(next));
+        return next;
+      });
 
       // Also deduct from inventory
-      setInventory((prev) =>
-        prev.map((item) =>
+      setInventory((prev) => {
+        const next = prev.map((item) =>
           item.id === log.itemId
             ? {
                 ...item,
                 currentStock: Math.max(0, Math.round((item.currentStock - log.quantity) * 1000) / 1000),
               }
             : item
-        )
-      );
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}inventory`, JSON.stringify(next));
+        return next;
+      });
 
+      broadcastStateChange('SYNC_ALL');
+    },
+    [broadcastStateChange]
+  );
+
+  // Delete Waste Log
+  const deleteWasteLog = useCallback(
+    (logId: string) => {
+      setWasteLogs((prev) => {
+        const next = prev.filter((w) => w.id !== logId);
+        localStorage.setItem(`${STORAGE_PREFIX}waste`, JSON.stringify(next));
+        return next;
+      });
       broadcastStateChange('SYNC_ALL');
     },
     [broadcastStateChange]
@@ -1062,8 +1134,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         inventory,
         restockInventory,
+        updateInventoryItem,
+        addInventoryItem,
+        deleteInventoryItem,
         wasteLogs,
         logFoodWaste,
+        deleteWasteLog,
 
         zReports,
         generateZReading,
