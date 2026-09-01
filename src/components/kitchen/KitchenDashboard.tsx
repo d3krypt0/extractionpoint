@@ -7,7 +7,6 @@ import {
   VolumeX, 
   RotateCcw, 
   Clock, 
-  Sparkles, 
   CheckCircle2, 
   ChefHat
 } from 'lucide-react';
@@ -119,7 +118,7 @@ export const KitchenDashboard: React.FC = () => {
           </div>
 
           <div className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium flex items-center space-x-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Ready: <strong>{readyCount}</strong></span>
           </div>
 

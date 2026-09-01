@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MenuItem, CustomizationOption, MilkOption, SweetnessLevel, Temperature } from '../../types';
 import { formatPhp } from '../../utils/phCurrency';
-import { X, Plus, Minus, Check, Flame, Coffee, Sparkles } from 'lucide-react';
+import { X, Plus, Minus, Check, Flame, Coffee } from 'lucide-react';
 
 interface ItemCustomizerModalProps {
   item: MenuItem | null;
@@ -112,7 +112,7 @@ export const ItemCustomizerModal: React.FC<ItemCustomizerModalProps> = ({
                       : 'border-[#ded8ce] dark:border-[#2a2a30] text-[#555555] dark:text-[#aaaaaf] hover:bg-[#eae4db]/50 dark:hover:bg-[#222226]'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <Coffee className="w-4 h-4 text-blue-400" />
                   <span>Iced (Chilled)</span>
                 </button>
                 <button

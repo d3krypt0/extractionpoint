@@ -11,7 +11,6 @@ import {
   Search, 
   Plus, 
   Flame, 
-  Sparkles, 
   Star, 
   Coffee, 
   Leaf, 
@@ -200,7 +199,7 @@ export const CustomerView: React.FC = () => {
             {[
               { id: 'all', label: 'All Menu' },
               { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-3.5 h-3.5 text-amber-500" /> },
-              { id: 'signature', label: 'Signatures', icon: <Sparkles className="w-3.5 h-3.5 text-[#c5a880]" /> },
+              { id: 'signature', label: 'Signatures', icon: <Coffee className="w-3.5 h-3.5 text-[#c5a880]" /> },
               { id: 'spicy', label: 'Spicy', icon: <Flame className="w-3.5 h-3.5 text-rose-500" /> },
               { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-3.5 h-3.5 text-emerald-500" /> },
             ].map((f) => (

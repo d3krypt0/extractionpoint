@@ -8,8 +8,7 @@ import {
   ShoppingBag, 
   Check, 
   ArrowRight, 
-  RotateCcw,
-  Sparkles
+  RotateCcw
 } from 'lucide-react';
 
 interface OrderTicketCardProps {
@@ -195,7 +194,7 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
             onClick={() => onUpdateStatus(order.id, 'ready')}
             className="w-full py-2.5 rounded-xl bg-[#c5a880] text-black font-black text-xs flex items-center justify-center space-x-1.5 hover:bg-[#d5baa0] active:scale-98 transition-all shadow-md"
           >
-            <Sparkles className="w-4 h-4" />
+            <CheckCircle2 className="w-4 h-4" />
             <span>Mark Ready for Serving</span>
           </button>
         )}

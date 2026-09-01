@@ -6,7 +6,6 @@ import {
   CheckCircle2, 
   ChefHat, 
   Coffee, 
-  Sparkles, 
   Receipt, 
   ShoppingBag, 
   Utensils, 
@@ -59,7 +58,7 @@ export const LiveOrderTracker: React.FC = () => {
   const steps = [
     { key: 'placed', label: 'Order Received', icon: <Coffee className="w-4 h-4" /> },
     { key: 'in_prep', label: 'Brewing & In Kitchen', icon: <ChefHat className="w-4 h-4" /> },
-    { key: 'ready', label: 'Ready for Serving', icon: <Sparkles className="w-4 h-4" /> },
+    { key: 'ready', label: 'Ready for Serving', icon: <Check className="w-4 h-4" /> },
     { key: 'completed', label: 'Completed', icon: <CheckCircle2 className="w-4 h-4" /> },
   ];
 

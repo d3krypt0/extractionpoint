@@ -8,7 +8,6 @@ import {
   QrCode, 
   Smartphone, 
   Check, 
-  Sparkles,
   Copy
 } from 'lucide-react';
 
@@ -153,7 +152,7 @@ export const TableQrStandModal: React.FC<TableQrStandModalProps> = ({
             <div className="flex-1 space-y-4 max-w-sm">
               <div className="space-y-2">
                 <h4 className="font-brand font-bold text-sm text-[#111111] dark:text-[#f8f7f4] flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-[#c5a880]" />
+                  <Smartphone className="w-4 h-4 text-[#c5a880]" />
                   <span>Customer Phone QR Experience</span>
                 </h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
