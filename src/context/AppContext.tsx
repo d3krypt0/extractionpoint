@@ -435,7 +435,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { type, payload, senderId } = event.data;
       if (senderId && senderId === clientId) return;
 
-      if (type === 'MENU_UPDATE' && payload?.menuItems) {
+      if (type === 'TABLES_UPDATE' && payload?.tables) {
+        setTables(payload.tables);
+        localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(payload.tables));
+      } else if (type === 'MENU_UPDATE' && payload?.menuItems) {
         setMenuItems(payload.menuItems);
       } else if (type === 'SYNC_ALL' || type === 'ORDER_PLACED' || type === 'ORDER_UPDATED' || type === 'STATUS_UPDATED') {
         const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
