@@ -13,9 +13,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   showTagline = false,
   size = 'sm',
 }) => {
-  // Height classes that precisely span the total height of the 2-line text lockup
+  // Height classes that precisely span the 2-line title ("EXTRACTION" / "POINT")
   const iconHeights = {
-    sm: 'h-10 w-auto sm:h-11',
+    sm: 'h-9 w-auto sm:h-10',
     md: 'h-13 w-auto sm:h-14',
     lg: 'h-18 w-auto sm:h-20',
   };
@@ -24,12 +24,6 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     sm: 'text-xs sm:text-sm tracking-[0.24em]',
     md: 'text-base sm:text-lg tracking-[0.26em]',
     lg: 'text-xl sm:text-2xl tracking-[0.28em]',
-  };
-
-  const taglineSizes = {
-    sm: 'text-[9.5px] sm:text-[10px] tracking-[0.18em]',
-    md: 'text-xs sm:text-sm tracking-[0.2em]',
-    lg: 'text-sm sm:text-base tracking-[0.22em]',
   };
 
   const logoMark = (
@@ -59,12 +53,15 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     return (
       <div className={`flex flex-col items-center justify-center select-none text-center ${className}`}>
         {logoMark}
-        <div className="mt-2.5">
-          <h1 className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap ${titleSizes[size]}`}>
-            EXTRACTION POINT
-          </h1>
+        <div className="mt-2.5 flex flex-col items-center">
+          <span className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap ${titleSizes[size]}`}>
+            EXTRACTION
+          </span>
+          <span className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap mt-0.5 ${titleSizes[size]}`}>
+            POINT
+          </span>
           {showTagline && (
-            <p className={`font-brand uppercase text-[#666666] dark:text-[#a0a0a8] font-semibold mt-1 whitespace-nowrap ${taglineSizes[size]}`}>
+            <p className="font-brand uppercase text-[#666666] dark:text-[#a0a0a8] font-semibold mt-1 whitespace-nowrap text-[9.5px] sm:text-[10.5px] tracking-[0.2em]">
               Your Day Deserves Better Caffeine.
             </p>
           )}
@@ -73,21 +70,20 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     );
   }
 
-  // Horizontal variant (default): Full-bleed logo mark height matches the top and bottom bounds of the text block
+  // Horizontal variant (default): Logo mark on left, "EXTRACTION" on top line, "POINT" on bottom line
   return (
-    <div className={`inline-flex items-center space-x-3 select-none ${className}`}>
+    <div className={`inline-flex items-center space-x-2.5 sm:space-x-3 select-none ${className}`}>
       {logoMark}
       <div className="flex flex-col justify-center text-left">
-        <h1 className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap ${titleSizes[size]}`}>
-          EXTRACTION POINT
-        </h1>
-        {showTagline ? (
-          <p className={`font-brand uppercase text-[#777777] dark:text-[#9999a2] font-semibold leading-tight mt-0.5 whitespace-nowrap ${taglineSizes[size]}`}>
+        <span className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap ${titleSizes[size]}`}>
+          EXTRACTION
+        </span>
+        <span className={`font-brand font-bold uppercase text-[#111111] dark:text-[#f8f7f4] leading-tight whitespace-nowrap mt-0.5 ${titleSizes[size]}`}>
+          POINT
+        </span>
+        {showTagline && (
+          <p className="font-brand uppercase text-[#777777] dark:text-[#9999a2] font-semibold leading-tight mt-1 whitespace-nowrap text-[8.5px] sm:text-[9.5px] tracking-[0.16em]">
             Your Day Deserves Better Caffeine.
-          </p>
-        ) : (
-          <p className={`font-brand uppercase text-[#888888] dark:text-[#888892] font-semibold leading-tight mt-0.5 whitespace-nowrap ${taglineSizes[size]}`}>
-            Specialty Coffee
           </p>
         )}
       </div>
