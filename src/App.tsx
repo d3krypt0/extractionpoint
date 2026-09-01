@@ -10,11 +10,12 @@ import { LiveOrderTracker } from './components/customer/LiveOrderTracker';
 import { CartCheckoutModal } from './components/customer/CartCheckoutModal';
 import { TableAvailabilityMap } from './components/customer/TableAvailabilityMap';
 import { QueueSystemModal } from './components/customer/QueueSystemModal';
+import { StaffPinModal } from './components/common/StaffPinModal';
 import { BrandLogo } from './components/common/BrandLogo';
 import { WifiOff } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activeView, isOnline } = useApp();
+  const { activeView, isOnline, isStaffAuthenticated } = useApp();
 
   // Global modals controlled from header or hotkeys
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -53,14 +54,14 @@ const MainLayout: React.FC = () => {
         onOpenQueue={() => setIsQueueOpen(true)}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Guarded with Staff Authentication */}
       <div className="flex-1">
         {activeView === 'customer' && <CustomerView />}
-        {activeView === 'kitchen' && <KitchenDashboard />}
-        {activeView === 'pos' && <PosDashboard />}
-        {activeView === 'inventory' && <InventoryDashboard />}
-        {activeView === 'analytics' && <AnalyticsDashboard />}
         {activeView === 'tracker' && <LiveOrderTracker />}
+        {activeView === 'kitchen' && (isStaffAuthenticated ? <KitchenDashboard /> : <CustomerView />)}
+        {activeView === 'pos' && (isStaffAuthenticated ? <PosDashboard /> : <CustomerView />)}
+        {activeView === 'inventory' && (isStaffAuthenticated ? <InventoryDashboard /> : <CustomerView />)}
+        {activeView === 'analytics' && (isStaffAuthenticated ? <AnalyticsDashboard /> : <CustomerView />)}
       </div>
 
       {/* Footer */}
@@ -113,6 +114,9 @@ const MainLayout: React.FC = () => {
         isOpen={isQueueOpen}
         onClose={() => setIsQueueOpen(false)}
       />
+
+      {/* Staff PIN Authentication Keypad Modal */}
+      <StaffPinModal />
     </div>
   );
 };

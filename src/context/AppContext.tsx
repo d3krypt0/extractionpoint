@@ -125,6 +125,14 @@ interface AppContextType {
   setQrTableNumber: (table: number | null) => void;
   enterCustomerQrMode: (tableNumber?: number) => void;
   exitCustomerQrMode: () => void;
+
+  // Staff PIN Security & Terminal Lock
+  isStaffAuthenticated: boolean;
+  isStaffPinModalOpen: boolean;
+  setIsStaffPinModalOpen: (open: boolean) => void;
+  requestStaffView: (view: ActiveView) => void;
+  authenticateStaff: (pin: string) => boolean;
+  lockStaffMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -138,6 +146,16 @@ const CLOUD_SYNC_URL = `https://ntfy.sh/${CLOUD_SYNC_TOPIC}`;
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Unique Client ID to prevent double-processing self-emitted cloud events
   const clientId = useMemo(() => 'cl_' + Math.random().toString(36).substring(2, 9), []);
+
+  // Staff Authentication & PIN Protection (Default PIN: 1234)
+  const [isStaffAuthenticated, setIsStaffAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(`${STORAGE_PREFIX}staff_auth`) === 'true' || localStorage.getItem(`${STORAGE_PREFIX}staff_auth`) === 'true';
+    }
+    return false;
+  });
+  const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState<boolean>(false);
+  const [pendingStaffView, setPendingStaffView] = useState<ActiveView>('kitchen');
 
   // Theme & App Navigation
   const [activeView, setActiveView] = useState<ActiveView>('customer');
@@ -160,11 +178,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
-  // QR Customer Mode (Auto-enabled if URL has ?table=X or ?mode=customer_qr)
+  // Persistent Customer QR Mode Safeguard:
+  // If user entered from a QR link (?table=X or ?mode=customer_qr) OR this device was tagged as customer,
+  // KEEP THEM IN CUSTOMER MODE unless staff enters the 4-digit PIN!
   const [isQrCustomerMode, setIsQrCustomerMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      return params.has('table') || params.get('mode') === 'customer_qr' || params.get('mode') === 'qr';
+      const isQr = params.has('table') || params.get('mode') === 'customer_qr' || params.get('mode') === 'qr';
+      if (isQr) {
+        localStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
+        sessionStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
+        return true;
+      }
+      // If not staff authenticated and tagged as customer device
+      const isTaggedCustomer = localStorage.getItem(`${STORAGE_PREFIX}is_customer_device`) === 'true';
+      const isStaff = sessionStorage.getItem(`${STORAGE_PREFIX}staff_auth`) === 'true';
+      return isTaggedCustomer && !isStaff;
     }
     return false;
   });
@@ -175,6 +204,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const tableParam = params.get('table');
       if (tableParam) {
         const num = parseInt(tableParam, 10);
+        if (!isNaN(num) && num > 0) {
+          localStorage.setItem(`${STORAGE_PREFIX}customer_table_num`, String(num));
+          return num;
+        }
+      }
+      const savedTable = localStorage.getItem(`${STORAGE_PREFIX}customer_table_num`);
+      if (savedTable) {
+        const num = parseInt(savedTable, 10);
         if (!isNaN(num) && num > 0) return num;
       }
     }
@@ -541,16 +578,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const enterCustomerQrMode = useCallback((tableNumber?: number) => {
     setIsQrCustomerMode(true);
     setActiveView('customer');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
+      sessionStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
+    }
     if (tableNumber) {
       setQrTableNumber(tableNumber);
       setSelectedTableForOrdering(tableNumber);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${STORAGE_PREFIX}customer_table_num`, String(tableNumber));
+      }
     }
   }, []);
 
   const exitCustomerQrMode = useCallback(() => {
+    // If not authenticated as staff, prompt for PIN instead of directly bypassing
+    if (!isStaffAuthenticated) {
+      setPendingStaffView('customer');
+      setIsStaffPinModalOpen(true);
+      return;
+    }
     setIsQrCustomerMode(false);
     setQrTableNumber(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
+      sessionStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
+      localStorage.removeItem(`${STORAGE_PREFIX}customer_table_num`);
+    }
+  }, [isStaffAuthenticated]);
+
+  // Staff PIN Authentication (Default: 1234)
+  const authenticateStaff = useCallback((pin: string): boolean => {
+    if (pin === '1234') {
+      setIsStaffAuthenticated(true);
+      setIsStaffPinModalOpen(false);
+      setIsQrCustomerMode(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`${STORAGE_PREFIX}staff_auth`, 'true');
+        localStorage.setItem(`${STORAGE_PREFIX}staff_auth`, 'true');
+        localStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
+        sessionStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
+      }
+      setActiveView(pendingStaffView || 'kitchen');
+      return true;
+    }
+    return false;
+  }, [pendingStaffView]);
+
+  const lockStaffMode = useCallback(() => {
+    setIsStaffAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(`${STORAGE_PREFIX}staff_auth`);
+      localStorage.removeItem(`${STORAGE_PREFIX}staff_auth`);
+      localStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
+    }
+    setIsQrCustomerMode(true);
+    setActiveView('customer');
   }, []);
+
+  const requestStaffView = useCallback((view: ActiveView) => {
+    if (isStaffAuthenticated) {
+      setActiveView(view);
+    } else {
+      setPendingStaffView(view);
+      setIsStaffPinModalOpen(true);
+    }
+  }, [isStaffAuthenticated]);
 
   // Cart Operations
   const addToCart = useCallback((item: MenuItem, customization: CustomizationOption = {}, quantity: number = 1) => {
@@ -1180,6 +1273,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setQrTableNumber,
         enterCustomerQrMode,
         exitCustomerQrMode,
+
+        // Staff PIN & Terminal Protection
+        isStaffAuthenticated,
+        isStaffPinModalOpen,
+        setIsStaffPinModalOpen,
+        requestStaffView,
+        authenticateStaff,
+        lockStaffMode,
       }}
     >
       {children}

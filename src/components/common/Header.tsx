@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { BrandLogo } from './BrandLogo';
-import { TableQrStandModal } from '../customer/TableQrStandModal';
+import { ActiveView } from '../../types';
 import { 
   Coffee, 
   UtensilsCrossed, 
@@ -9,18 +8,21 @@ import {
   Package, 
   BarChart3, 
   Clock, 
+  ShoppingBag, 
   Sun, 
   Moon, 
   Volume2, 
   VolumeX, 
   Wifi, 
   WifiOff, 
-  ShoppingBag,
+  MapPin, 
+  QrCode, 
   Users,
-  QrCode,
-  MapPin
+  Lock,
+  Unlock
 } from 'lucide-react';
-import { ActiveView } from '../../types';
+import { BrandLogo } from './BrandLogo';
+import { TableQrStandModal } from '../customer/TableQrStandModal';
 
 interface HeaderProps {
   onOpenCart?: () => void;
@@ -42,13 +44,15 @@ export const Header: React.FC<HeaderProps> = ({
     soundEnabled,
     toggleSound,
     cartTotals,
-    orders,
     activeOrders,
-    queue,
+    orders,
     trackedOrderId,
+    queue,
     isQrCustomerMode,
     qrTableNumber,
-    exitCustomerQrMode,
+    isStaffAuthenticated,
+    setIsStaffPinModalOpen,
+    lockStaffMode,
   } = useApp();
 
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -57,7 +61,8 @@ export const Header: React.FC<HeaderProps> = ({
   const activeTrackedOrder = orders.find((o) => o.id === trackedOrderId);
   const isTrackerBadgeActive = activeTrackedOrder && activeTrackedOrder.status !== 'completed' && activeTrackedOrder.status !== 'served';
 
-  const navItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
+  // Full Staff Navigation
+  const staffNavItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'customer', fullLabel: 'Menu Ordering', shortLabel: 'Menu', icon: <Coffee className="w-4 h-4" /> },
     { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-4 h-4" />, badge: activeOrders.length },
     { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-4 h-4" /> },
@@ -66,12 +71,18 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: isTrackerBadgeActive ? 1 : 0 },
   ];
 
+  // Customer Navigation (Safe for unauthenticated visitors & table QR users)
+  const customerNavItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
+    { id: 'customer', fullLabel: 'Menu Ordering', shortLabel: 'Menu', icon: <Coffee className="w-4 h-4" /> },
+    { id: 'tracker', fullLabel: 'My Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: isTrackerBadgeActive ? 1 : 0 },
+  ];
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-[#faf8f5]/95 dark:bg-[#0c0c0e]/95 backdrop-blur-md border-b border-[#e5e0d8] dark:border-[#222226] transition-colors select-none">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           
-          {/* Single Main Navbar Row - Fixed height, No vertical scrollbar */}
+          {/* Single Main Navbar Row */}
           <div className="flex items-center justify-between h-16 sm:h-18 gap-2">
             
             {/* Logo & Cafe Brand */}
@@ -82,27 +93,12 @@ export const Header: React.FC<HeaderProps> = ({
               <BrandLogo variant="horizontal" size="sm" showTagline={false} />
             </div>
 
-            {/* CUSTOMER QR MODE: If customer scanned table QR code, hide staff tabs and show Table badge */}
-            {isQrCustomerMode ? (
-              <div className="flex items-center space-x-2 bg-[#111111] dark:bg-[#18181c] text-white px-3.5 py-1.5 rounded-2xl border border-[#c5a880]/40 shadow-sm">
-                <MapPin className="w-4 h-4 text-[#c5a880] animate-bounce" />
-                <span className="font-brand font-bold text-xs">
-                  {qrTableNumber ? `Table ${qrTableNumber} (Dine-In)` : 'Self-Ordering'}
-                </span>
-                <button
-                  type="button"
-                  onClick={exitCustomerQrMode}
-                  className="ml-2 text-[10px] text-gray-400 hover:text-white underline"
-                  title="Switch back to Staff View"
-                >
-                  Exit QR
-                </button>
-              </div>
-            ) : (
-              /* STAFF VIEW: Navigation Tabs for Desktop & Tablet */
+            {/* NAVIGATION AREA */}
+            {isStaffAuthenticated ? (
+              /* AUTHENTICATED STAFF VIEW: Full POS / KDS / Inventory Navigation */
               <>
                 <nav className="hidden lg:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
-                  {navItems.map((item) => {
+                  {staffNavItems.map((item) => {
                     const isActive = activeView === item.id;
                     return (
                       <button
@@ -133,9 +129,9 @@ export const Header: React.FC<HeaderProps> = ({
                   })}
                 </nav>
 
-                {/* Tablet Medium Screen Navigation (768px - 1024px) */}
+                {/* Tablet Medium Screen Navigation */}
                 <nav className="hidden md:flex lg:hidden items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
-                  {navItems.map((item) => {
+                  {staffNavItems.map((item) => {
                     const isActive = activeView === item.id;
                     return (
                       <button
@@ -164,13 +160,60 @@ export const Header: React.FC<HeaderProps> = ({
                   })}
                 </nav>
               </>
+            ) : isQrCustomerMode || qrTableNumber ? (
+              /* CUSTOMER QR MODE: Table Identification Badge */
+              <div className="flex items-center space-x-2 bg-[#111111] dark:bg-[#18181c] text-white px-3.5 py-1.5 rounded-2xl border border-[#c5a880]/40 shadow-sm">
+                <MapPin className="w-4 h-4 text-[#c5a880] animate-bounce" />
+                <span className="font-brand font-bold text-xs">
+                  {qrTableNumber ? `Table ${qrTableNumber} (Dine-In)` : 'Self-Ordering'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsStaffPinModalOpen(true)}
+                  className="ml-2 text-[10px] text-gray-400 hover:text-white flex items-center space-x-1"
+                  title="Staff Authentication Login"
+                >
+                  <Lock className="w-3 h-3 text-[#c5a880]" />
+                  <span>Staff</span>
+                </button>
+              </div>
+            ) : (
+              /* PUBLIC CUSTOMER VIEW: Safe navigation for all visitors */
+              <nav className="hidden sm:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
+                {customerNavItems.map((item) => {
+                  const isActive = activeView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveView(item.id)}
+                      className={`inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-brand font-bold transition-all ${
+                        isActive
+                          ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-sm'
+                          : 'text-[#555555] dark:text-[#a0a0aa] hover:text-[#111111] dark:hover:text-[#f8f7f4]'
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.fullLabel}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span
+                          className={`ml-1 px-1.5 py-0.2 text-[9.5px] rounded-full font-bold font-mono ${
+                            isActive ? 'bg-[#c5a880] text-black' : 'bg-[#c5a880]/25 text-[#9d7f57]'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
             )}
 
             {/* Right Action Icons & Controls */}
             <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
               
-              {/* QR Stand Print & Generator Button (Staff View) */}
-              {!isQrCustomerMode && (
+              {/* STAFF ONLY: QR Stand Print & Generator Button */}
+              {isStaffAuthenticated && (
                 <button
                   onClick={() => setIsQrModalOpen(true)}
                   className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#c5a880]/15 text-[#9d7f57] dark:text-[#dfcca9] hover:bg-[#c5a880]/25 border border-[#c5a880]/30 transition-all"
@@ -181,8 +224,28 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
+              {/* STAFF ONLY: Lock Terminal Button */}
+              {isStaffAuthenticated ? (
+                <button
+                  onClick={lockStaffMode}
+                  className="p-2 rounded-xl text-amber-500 hover:bg-amber-500/10 border border-amber-500/30 transition-colors"
+                  title="Lock Staff Terminal (Switch to Customer Mode)"
+                >
+                  <Unlock className="w-4 h-4" />
+                </button>
+              ) : (
+                /* Customer View: Discreet Staff Access Button */
+                <button
+                  onClick={() => setIsStaffPinModalOpen(true)}
+                  className="p-2 rounded-xl text-gray-400 hover:text-[#111111] dark:hover:text-white hover:bg-[#eae4db] dark:hover:bg-[#222226] transition-colors"
+                  title="Staff Portal Login (Enter PIN)"
+                >
+                  <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
+                </button>
+              )}
+
               {/* Live Queue Button (Customer quick access) */}
-              {activeView === 'customer' && !isQrCustomerMode && onOpenQueue && (
+              {activeView === 'customer' && onOpenQueue && (
                 <button
                   onClick={onOpenQueue}
                   className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
@@ -195,7 +258,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
 
               {/* Table Floor Map (Customer quick access) */}
-              {activeView === 'customer' && !isQrCustomerMode && onOpenTableMap && (
+              {activeView === 'customer' && onOpenTableMap && (
                 <button
                   onClick={onOpenTableMap}
                   className="hidden xl:inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
@@ -255,10 +318,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Mobile View Switcher (Under 768px only, for staff view) */}
-          {!isQrCustomerMode && (
+          {/* Mobile View Switcher (Under 768px only, for authenticated staff) */}
+          {isStaffAuthenticated && (
             <div className="flex md:hidden overflow-x-auto py-2 space-x-1.5 no-scrollbar border-t border-[#eae4db] dark:border-[#1e1e22]">
-              {navItems.map((item) => {
+              {staffNavItems.map((item) => {
                 const isActive = activeView === item.id;
                 return (
                   <button
