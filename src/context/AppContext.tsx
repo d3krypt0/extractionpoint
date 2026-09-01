@@ -264,11 +264,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem(`${STORAGE_PREFIX}trackedOrderId`) || null;
   });
 
-  // Menu items with sold-out persistence
+  // Menu Schema Version to automatically bust stale localStorage cache across all browsers & devices
+  const MENU_SCHEMA_VERSION = 'v5_pdf_official_shizuoka';
+
+  // Menu items with sold-out persistence & auto-sync with latest official PDF menu
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}menu`);
-    if (saved) {
-      try { return JSON.parse(saved); } catch {}
+    if (typeof window !== 'undefined') {
+      const savedVersion = localStorage.getItem(`${STORAGE_PREFIX}menu_version`);
+      if (savedVersion === MENU_SCHEMA_VERSION) {
+        const saved = localStorage.getItem(`${STORAGE_PREFIX}menu`);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          } catch {}
+        }
+      } else {
+        // Cache is stale or missing version: write latest version & load fresh official menu
+        localStorage.setItem(`${STORAGE_PREFIX}menu_version`, MENU_SCHEMA_VERSION);
+        localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(MENU_ITEMS));
+      }
     }
     return MENU_ITEMS;
   });

@@ -270,19 +270,19 @@ export const LiveOrderTracker: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="p-3 rounded-2xl bg-[#f5f1ea] dark:bg-[#18181c] border border-[#e8e2d8] dark:border-[#26262c] text-center min-w-[100px]">
-              <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-[#f5f1ea] dark:bg-[#18181c] border-2 border-[#c5a880]/50 text-center min-w-[110px] shadow-sm">
+              <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block">
                 {activeOrder.type === 'dine_in' ? 'Dine-In Table' : 'Order Type'}
               </span>
-              <div className="font-serif font-bold text-base text-[#111111] dark:text-white mt-0.5 flex items-center justify-center space-x-1">
+              <div className="font-sans font-black text-base sm:text-lg text-[#111111] dark:text-white mt-0.5 flex items-center justify-center space-x-1.5">
                 {activeOrder.type === 'dine_in' ? (
                   <>
-                    <Utensils className="w-3.5 h-3.5 text-[#c5a880]" />
-                    <span>Table #{activeOrder.tableNumber || 'N/A'}</span>
+                    <Utensils className="w-4 h-4 text-[#c5a880]" />
+                    <span>Table <strong className="text-[#c5a880] font-mono font-black">{activeOrder.tableNumber || 'N/A'}</strong></span>
                   </>
                 ) : (
                   <>
-                    <ShoppingBag className="w-3.5 h-3.5 text-[#c5a880]" />
+                    <ShoppingBag className="w-4 h-4 text-[#c5a880]" />
                     <span>Takeaway</span>
                   </>
                 )}

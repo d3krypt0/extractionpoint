@@ -141,11 +141,19 @@ export const Header: React.FC<HeaderProps> = ({
                   })}
                 </nav>
               ) : isQrCustomerMode || qrTableNumber ? (
-                /* CUSTOMER QR MODE: Table Identification Badge */
-                <div className="flex items-center space-x-2 bg-[#111111] dark:bg-[#18181c] text-white px-3 py-1 rounded-2xl border border-[#c5a880]/40 shadow-sm">
-                  <MapPin className="w-3.5 h-3.5 text-[#c5a880] animate-bounce" />
-                  <span className="font-brand font-bold text-xs">
-                    {qrTableNumber ? `Table ${qrTableNumber} (Dine-In)` : 'Self-Ordering'}
+                /* CUSTOMER QR MODE: Prominent High-Legibility Table Badge */
+                <div className="flex items-center space-x-2 bg-[#111111] dark:bg-black text-white px-3.5 sm:px-4 py-1.5 rounded-full border-2 border-[#c5a880] shadow-md flex-shrink-0 animate-fadeIn">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                  <MapPin className="w-4 h-4 text-[#c5a880] flex-shrink-0" />
+                  <span className="font-sans font-black text-xs sm:text-sm tracking-wide uppercase text-white whitespace-nowrap">
+                    {qrTableNumber ? (
+                      <>
+                        TABLE <span className="text-[#c5a880] font-mono text-sm sm:text-base font-black px-1.5 py-0.5 rounded bg-white/10 ml-0.5">{qrTableNumber}</span>
+                        <span className="hidden xs:inline ml-1.5 text-[10.5px] font-bold text-gray-300 font-sans tracking-normal">(DINE-IN)</span>
+                      </>
+                    ) : (
+                      'DINE-IN ORDER'
+                    )}
                   </span>
                 </div>
               ) : (

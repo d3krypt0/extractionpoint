@@ -12,7 +12,6 @@ import {
   Flame, 
   Star, 
   Coffee, 
-  Leaf, 
   Users, 
   MapPin, 
   Clock, 
@@ -142,7 +141,8 @@ export const CustomerView: React.FC = () => {
     tables, 
     queue, 
     trackedOrderId, 
-    setActiveView 
+    setActiveView,
+    qrTableNumber,
   } = useApp();
 
   const [activeMainGroup, setActiveMainGroup] = useState<'all' | MainCategoryGroup>('all');
@@ -179,7 +179,6 @@ export const CustomerView: React.FC = () => {
       if (activeFilter === 'best_seller' && !item.isBestSeller) return false;
       if (activeFilter === 'signature' && !item.isSignature) return false;
       if (activeFilter === 'spicy' && !item.spicyLevel) return false;
-      if (activeFilter === 'vegetarian' && !item.tags?.includes('vegetarian')) return false;
 
       return true;
     });
@@ -308,7 +307,6 @@ export const CustomerView: React.FC = () => {
                 { id: 'best_seller', label: 'Best Sellers', icon: <Star className="w-3 h-3 text-amber-500" /> },
                 { id: 'signature', label: 'Signatures', icon: <Coffee className="w-3 h-3 text-[#c5a880]" /> },
                 { id: 'spicy', label: 'Spicy', icon: <Flame className="w-3 h-3 text-rose-500" /> },
-                { id: 'vegetarian', label: 'Veggie', icon: <Leaf className="w-3 h-3 text-emerald-500" /> },
               ].map((f) => (
                 <button
                   key={f.id}
@@ -331,7 +329,32 @@ export const CustomerView: React.FC = () => {
       </div>
 
       {/* Main Editorial Menu Content Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-12">
+        
+        {/* Dine-In Seated Table Prominent Banner */}
+        {qrTableNumber && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#111111] dark:bg-[#141417] text-white border-2 border-[#c5a880] shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fadeIn">
+            <div className="flex items-center space-x-3.5 w-full sm:w-auto">
+              <div className="w-12 h-12 rounded-xl bg-[#c5a880] text-black font-black flex items-center justify-center font-mono text-2xl shadow-md flex-shrink-0">
+                #{qrTableNumber}
+              </div>
+              <div>
+                <div className="font-sans font-black text-base sm:text-lg tracking-wide uppercase text-white flex items-center space-x-2">
+                  <span>Dine-In • Seated at Table #{qrTableNumber}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">DINE-IN</span>
+                </div>
+                <p className="text-xs text-gray-300 font-sans mt-0.5">
+                  Your ordered coffee, drinks, and food will be served directly to <strong>Table #{qrTableNumber}</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="w-full sm:w-auto text-left sm:text-right flex-shrink-0">
+              <span className="text-[11px] font-mono text-[#dfcca9] bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 inline-block">
+                Self-Order Table #{qrTableNumber}
+              </span>
+            </div>
+          </div>
+        )}
         
         {/* Render Each Super Category Page */}
         {(['food', 'coffee', 'non_coffee', 'matcha'] as MainCategoryGroup[]).map((superGroup) => {
