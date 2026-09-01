@@ -10,12 +10,19 @@ import { LiveOrderTracker } from './components/customer/LiveOrderTracker';
 import { CartCheckoutModal } from './components/customer/CartCheckoutModal';
 import { TableAvailabilityMap } from './components/customer/TableAvailabilityMap';
 import { QueueSystemModal } from './components/customer/QueueSystemModal';
+import { AdminLoginView } from './components/admin/AdminLoginView';
 import { StaffPinModal } from './components/common/StaffPinModal';
 import { BrandLogo } from './components/common/BrandLogo';
-import { WifiOff } from 'lucide-react';
+import { WifiOff, Lock } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
-  const { activeView, isOnline, isStaffAuthenticated } = useApp();
+  const { 
+    activeView, 
+    isOnline, 
+    isStaffAuthenticated, 
+    isAdminRoute,
+    navigateTo 
+  } = useApp();
 
   // Global modals controlled from header or hotkeys
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -25,7 +32,6 @@ const MainLayout: React.FC = () => {
   // Global Keyboard Shortcuts (POS & Kitchen Fast Toggles)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape closes open modals
       if (e.key === 'Escape') {
         setIsCartOpen(false);
         setIsTableMapOpen(false);
@@ -36,6 +42,12 @@ const MainLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // 1. IF ON /admin AND NOT AUTHENTICATED: Show Dedicated Staff Admin Login
+  if (isAdminRoute && !isStaffAuthenticated) {
+    return <AdminLoginView />;
+  }
+
+  // 2. MAIN LAYOUT (Customer Storefront / or Authenticated Admin /admin)
   return (
     <div className="min-h-screen flex flex-col bg-[#faf8f5] dark:bg-[#0a0a0a] text-[#1a1715] dark:text-[#f4f2ee] transition-colors duration-200">
       
@@ -54,14 +66,24 @@ const MainLayout: React.FC = () => {
         onOpenQueue={() => setIsQueueOpen(true)}
       />
 
-      {/* Main Content Area - Guarded with Staff Authentication */}
+      {/* Main Content Area */}
       <div className="flex-1">
-        {activeView === 'customer' && <CustomerView />}
-        {activeView === 'tracker' && <LiveOrderTracker />}
-        {activeView === 'kitchen' && (isStaffAuthenticated ? <KitchenDashboard /> : <CustomerView />)}
-        {activeView === 'pos' && (isStaffAuthenticated ? <PosDashboard /> : <CustomerView />)}
-        {activeView === 'inventory' && (isStaffAuthenticated ? <InventoryDashboard /> : <CustomerView />)}
-        {activeView === 'analytics' && (isStaffAuthenticated ? <AnalyticsDashboard /> : <CustomerView />)}
+        {isAdminRoute ? (
+          /* ADMIN CONSOLE VIEWS */
+          <>
+            {activeView === 'kitchen' && <KitchenDashboard />}
+            {activeView === 'pos' && <PosDashboard />}
+            {activeView === 'inventory' && <InventoryDashboard />}
+            {activeView === 'analytics' && <AnalyticsDashboard />}
+            {activeView === 'tracker' && <LiveOrderTracker />}
+            {activeView === 'customer' && <CustomerView />}
+          </>
+        ) : (
+          /* CUSTOMER ONLINE STOREFRONT VIEWS */
+          <>
+            {activeView === 'tracker' ? <LiveOrderTracker /> : <CustomerView />}
+          </>
+        )}
       </div>
 
       {/* Footer */}
@@ -89,8 +111,18 @@ const MainLayout: React.FC = () => {
             </a>
           </div>
 
-          <div className="text-[11px] text-gray-400">
-            © {new Date().getFullYear()} Extraction Point Specialty Cafe. All Rights Reserved.
+          <div className="flex items-center space-x-3 text-[11px] text-gray-400">
+            <span>© {new Date().getFullYear()} Extraction Point Specialty Cafe.</span>
+            {!isAdminRoute && (
+              <button
+                onClick={() => navigateTo('/admin')}
+                className="hover:text-[#c5a880] text-gray-400/80 flex items-center space-x-1 transition-colors underline"
+                title="Staff & Management Login"
+              >
+                <Lock className="w-3 h-3" />
+                <span>Staff Portal</span>
+              </button>
+            )}
           </div>
         </div>
       </footer>
@@ -115,7 +147,7 @@ const MainLayout: React.FC = () => {
         onClose={() => setIsQueueOpen(false)}
       />
 
-      {/* Staff PIN Authentication Keypad Modal */}
+      {/* Staff PIN Keypad Modal */}
       <StaffPinModal />
     </div>
   );

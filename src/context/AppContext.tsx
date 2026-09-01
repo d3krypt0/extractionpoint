@@ -133,6 +133,11 @@ interface AppContextType {
   requestStaffView: (view: ActiveView) => void;
   authenticateStaff: (pin: string) => boolean;
   lockStaffMode: () => void;
+
+  // SPA Route Control (/ vs /admin)
+  currentPath: string;
+  navigateTo: (path: string) => void;
+  isAdminRoute: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -147,6 +152,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Unique Client ID to prevent double-processing self-emitted cloud events
   const clientId = useMemo(() => 'cl_' + Math.random().toString(36).substring(2, 9), []);
 
+  // Client-Side Routing (/ vs /admin)
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname;
+    }
+    return '/';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = useCallback((path: string) => {
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', path);
+      setCurrentPath(path);
+      if (path.startsWith('/admin') || path.startsWith('/staff')) {
+        setActiveView('kitchen');
+      } else {
+        setActiveView('customer');
+      }
+    }
+  }, []);
+
+  const isAdminRoute = currentPath.startsWith('/admin') || currentPath.startsWith('/staff');
+
   // Staff Authentication & PIN Protection (Default PIN: 1234)
   const [isStaffAuthenticated, setIsStaffAuthenticated] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -158,7 +193,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingStaffView, setPendingStaffView] = useState<ActiveView>('kitchen');
 
   // Theme & App Navigation
-  const [activeView, setActiveView] = useState<ActiveView>('customer');
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/staff')) {
+        return 'kitchen';
+      }
+    }
+    return 'customer';
+  });
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}theme`);
     return saved === 'light' ? 'light' : 'dark'; // Default to dark luxury editorial theme
@@ -1281,6 +1323,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         requestStaffView,
         authenticateStaff,
         lockStaffMode,
+
+        // SPA Routing (/ vs /admin)
+        currentPath,
+        navigateTo,
+        isAdminRoute,
       }}
     >
       {children}
