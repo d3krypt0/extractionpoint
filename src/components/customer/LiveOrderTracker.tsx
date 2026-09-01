@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { formatPhp } from '../../utils/phCurrency';
 import { 
@@ -9,11 +9,11 @@ import {
   Receipt, 
   ShoppingBag, 
   Utensils, 
-  ArrowLeft,
-  Share2,
-  Check,
-  XCircle,
-  Trash2,
+  ArrowLeft, 
+  Share2, 
+  Check, 
+  XCircle, 
+  Trash2, 
   Home
 } from 'lucide-react';
 
@@ -24,14 +24,51 @@ export const LiveOrderTracker: React.FC = () => {
     setTrackedOrderId, 
     clearTrackedOrder, 
     deleteOrder, 
-    setActiveView 
+    setActiveView,
+    isQrCustomerMode,
+    qrTableNumber,
+    activeView
   } = useApp();
 
   const [showReceipt, setShowReceipt] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const activeOrder = orders.find((o) => o.id === trackedOrderId) || orders[0];
+  // Determine if viewing as customer or staff
+  const isCustomer = isQrCustomerMode || Boolean(qrTableNumber) || activeView === 'customer';
+
+  // Filter orders visible to this device / table
+  const visibleOrders = useMemo(() => {
+    // 1. If at a specific QR table (e.g. ?table=1)
+    if (qrTableNumber) {
+      return orders.filter((o) => o.tableNumber === qrTableNumber || o.id === trackedOrderId);
+    }
+    // 2. If customer mode without QR table (e.g. placed takeaway order or self-order)
+    if (isCustomer) {
+      if (trackedOrderId) {
+        return orders.filter((o) => o.id === trackedOrderId);
+      }
+      return [];
+    }
+    // 3. Staff monitoring view: can inspect any order in cafe
+    return orders;
+  }, [orders, qrTableNumber, isCustomer, trackedOrderId]);
+
+  // Active order to display
+  const activeOrder = useMemo(() => {
+    if (trackedOrderId) {
+      const matched = visibleOrders.find((o) => o.id === trackedOrderId);
+      if (matched) return matched;
+    }
+    // If QR table has an in-progress order, show that
+    if (qrTableNumber) {
+      const inProgress = visibleOrders.find(
+        (o) => o.tableNumber === qrTableNumber && o.status !== 'completed' && o.status !== 'served'
+      );
+      if (inProgress) return inProgress;
+    }
+    return visibleOrders[0] || null;
+  }, [visibleOrders, trackedOrderId, qrTableNumber]);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -59,21 +96,28 @@ export const LiveOrderTracker: React.FC = () => {
 
   if (!activeOrder) {
     return (
-      <div className="max-w-2xl mx-auto p-8 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-[#c5a880]/15 text-[#c5a880] flex items-center justify-center mx-auto">
+      <div className="max-w-2xl mx-auto p-8 sm:p-12 text-center space-y-5 animate-fadeIn">
+        <div className="w-16 h-16 rounded-3xl bg-[#c5a880]/15 text-[#c5a880] flex items-center justify-center mx-auto shadow-sm">
           <Clock className="w-8 h-8" />
         </div>
-        <h3 className="font-serif text-2xl font-bold text-[#111111] dark:text-[#f8f7f4]">
-          No Active Orders
-        </h3>
-        <p className="text-xs text-gray-500 max-w-sm mx-auto">
-          You have no active orders being tracked. Explore our handcrafted coffee, Nami matcha, and food menu!
-        </p>
+        
+        <div className="space-y-1.5">
+          <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#111111] dark:text-[#f8f7f4]">
+            {qrTableNumber ? `No Active Orders for Table #${qrTableNumber}` : 'No Active Orders'}
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+            {qrTableNumber 
+              ? `There are currently no active orders for Table #${qrTableNumber}. Browse our menu and place an order to track it live.`
+              : 'You have no orders currently being prepared. Explore our specialty coffee, matcha, and kitchen food menu!'}
+          </p>
+        </div>
+
         <button
           onClick={() => setActiveView('customer')}
-          className="px-5 py-2.5 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs"
+          className="px-6 py-3 rounded-2xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs sm:text-sm shadow-md hover:opacity-90 active:scale-95 transition-all inline-flex items-center space-x-2"
         >
-          View Extraction Point Menu
+          <Coffee className="w-4 h-4" />
+          <span>Browse Extraction Point Menu</span>
         </button>
       </div>
     );
@@ -119,7 +163,7 @@ export const LiveOrderTracker: React.FC = () => {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <button
           onClick={() => setActiveView('customer')}
-          className="flex items-center space-x-1.5 text-xs font-bold text-[#666666] dark:text-[#9999a0] hover:text-black dark:hover:text-white"
+          className="flex items-center space-x-1.5 text-xs font-bold text-[#666666] dark:text-[#9999a0] hover:text-black dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Menu</span>
@@ -127,13 +171,13 @@ export const LiveOrderTracker: React.FC = () => {
 
         {/* Action Controls */}
         <div className="flex items-center space-x-2">
-          {orders.length > 1 && (
+          {visibleOrders.length > 1 && (
             <select
               value={activeOrder.id}
               onChange={(e) => setTrackedOrderId(e.target.value)}
               className="px-2.5 py-1.5 rounded-xl bg-[#ede7dc] dark:bg-[#202024] text-[11px] font-bold border border-[#ded8ce] dark:border-[#2a2a30] text-[#111111] dark:text-white"
             >
-              {orders.map((o) => (
+              {visibleOrders.map((o) => (
                 <option key={o.id} value={o.id}>
                   Order {o.orderNumber} ({o.status})
                 </option>
@@ -151,14 +195,16 @@ export const LiveOrderTracker: React.FC = () => {
             <span>Dismiss Tracker</span>
           </button>
 
-          {/* Barista Force Delete / Bypass */}
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-colors"
-            title="Barista Bypass / Force Delete Stuck Order"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          {/* STAFF ONLY: Force Delete / Bypass Button */}
+          {!isCustomer && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 transition-colors"
+              title="Staff: Bypass / Force Delete Stuck Order"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
 
           <button
             onClick={handleShare}
@@ -170,8 +216,8 @@ export const LiveOrderTracker: React.FC = () => {
         </div>
       </div>
 
-      {/* Delete / Bypass Confirmation Dialog */}
-      {showDeleteConfirm && (
+      {/* STAFF ONLY: Delete / Bypass Confirmation Dialog */}
+      {!isCustomer && showDeleteConfirm && (
         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 space-y-3 animate-fadeIn">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -179,7 +225,7 @@ export const LiveOrderTracker: React.FC = () => {
                 Bypass & Force Clear Order {activeOrder.orderNumber}?
               </h4>
               <p className="text-xs text-rose-600/80 dark:text-rose-300/80">
-                This will immediately purge this stuck ticket, free up Table #{activeOrder.tableNumber || 'N/A'}, and clear the tracker badge.
+                This will immediately purge this ticket, free up Table #{activeOrder.tableNumber || 'N/A'}, and clear the tracker badge.
               </p>
             </div>
           </div>

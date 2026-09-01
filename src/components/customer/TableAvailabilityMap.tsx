@@ -29,10 +29,19 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
   onSelectTable,
   selectedTableNumber,
 }) => {
-  const { tables, updateTableStatus } = useApp();
+  const { 
+    tables, 
+    updateTableStatus, 
+    isQrCustomerMode, 
+    activeView 
+  } = useApp();
+  
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  // Staff mode is ONLY active when inside staff portals (POS, KDS, Inventory, Analytics) and not in QR customer mode or table picking
+  const isStaff = !isQrCustomerMode && activeView !== 'customer' && !onSelectTable;
 
   const indoorTables = tables.filter((t) => t.section === 'indoor');
   const patioTables = tables.filter((t) => t.section === 'patio');
@@ -59,13 +68,13 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
   const getStatusBadge = (status: TableStatus) => {
     switch (status) {
       case 'available':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">Available</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">Available</span>;
       case 'occupied':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-700 dark:text-rose-300">Occupied</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-700 dark:text-rose-300">Occupied</span>;
       case 'reserved':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-700 dark:text-purple-300">Reserved</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-700 dark:text-purple-300">Reserved</span>;
       case 'cleaning':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300">Sanitizing</span>;
+        return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300">Sanitizing</span>;
     }
   };
 
@@ -87,16 +96,23 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
     const isSelected = selectedTableNumber === table.number;
     const isAvailable = table.status === 'available';
     const isCleaning = table.status === 'cleaning';
-    const isEditing = editingTableId === table.id;
+    const isEditing = editingTableId === table.id && isStaff;
 
     return (
       <div
         key={table.id}
+        onClick={() => {
+          // If customer is choosing a table and it is available
+          if (isAvailable && onSelectTable) {
+            onSelectTable(table.number);
+            onClose();
+          }
+        }}
         className={`relative p-4 rounded-2xl border flex flex-col justify-between transition-all shadow-sm ${
           isSelected
             ? 'ring-2 ring-[#c5a880] border-[#c5a880] bg-[#c5a880]/15'
             : getStatusColor(table.status)
-        }`}
+        } ${isAvailable && onSelectTable ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
       >
         <div>
           {/* Header row */}
@@ -111,16 +127,24 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
               </div>
             </div>
 
-            {/* Clickable Status Badge to open quick selector */}
-            <button
-              onClick={() => setEditingTableId(isEditing ? null : table.id)}
-              className="hover:scale-105 transition-transform"
-              title="Click to change table status"
-            >
-              {getStatusBadge(table.status)}
-            </button>
+            {/* Clickable Status Badge for Staff ONLY */}
+            {isStaff ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTableId(isEditing ? null : table.id);
+                }}
+                className="hover:scale-105 transition-transform"
+                title="Staff: Click to change table status"
+              >
+                {getStatusBadge(table.status)}
+              </button>
+            ) : (
+              <div>{getStatusBadge(table.status)}</div>
+            )}
           </div>
 
+          {/* Guest Name if Occupied */}
           {table.status === 'occupied' && table.activeCustomerName && (
             <div className="mt-2 text-xs font-medium text-[#777777] dark:text-[#888890] truncate">
               Guest: {table.activeCustomerName}
@@ -128,10 +152,11 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
           )}
         </div>
 
-        {/* Quick Staff Action Bar */}
+        {/* Action Row */}
         <div className="mt-3.5 pt-2.5 border-t border-black/5 dark:border-white/5 space-y-2">
-          {/* If Sanitizing: One-Click "Mark Available" */}
-          {isCleaning && (
+          
+          {/* STAFF ONLY: If Sanitizing, show One-Click "Mark Available" */}
+          {isStaff && isCleaning && (
             <button
               type="button"
               onClick={(e) => handleQuickStatusChange(table, 'available', e)}
@@ -142,7 +167,7 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
             </button>
           )}
 
-          {/* If Available & Customer selecting */}
+          {/* CUSTOMER MODE: If Available & Customer selecting table */}
           {isAvailable && onSelectTable && (
             <button
               type="button"
@@ -150,30 +175,32 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
                 onSelectTable(table.number);
                 onClose();
               }}
-              className="w-full py-1.5 px-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs flex items-center justify-center space-x-1 transition-all"
+              className="w-full py-2 px-3 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs flex items-center justify-center space-x-1 hover:opacity-90 active:scale-95 transition-all"
             >
               <Check className="w-3.5 h-3.5" />
               <span>{isSelected ? 'Selected' : 'Sit at This Table'}</span>
             </button>
           )}
 
-          {/* Quick Status Selector Pills for Barista */}
-          <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pt-1">
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={(e) => handleQuickStatusChange(table, opt.id, e)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  table.status === opt.id
-                    ? `${opt.color} shadow-xs scale-105`
-                    : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          {/* STAFF ONLY: Quick Status Selector Pills */}
+          {isStaff && (
+            <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pt-1">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={(e) => handleQuickStatusChange(table, opt.id, e)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                    table.status === opt.id
+                      ? `${opt.color} shadow-xs scale-105`
+                      : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -191,7 +218,7 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
             <div className="flex items-center space-x-2">
               <Coffee className="w-4 h-4 text-[#c5a880]" />
               <span className="text-[11px] font-bold tracking-widest uppercase text-[#c5a880] dark:text-[#dfcca9]">
-                Live Floor Plan & Seating Manager
+                Live Floor Plan {isStaff ? '& Seating Manager' : 'Availability'}
               </span>
             </div>
             <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#f8f7f4] mt-0.5">
@@ -206,7 +233,7 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
           </button>
         </div>
 
-        {/* Status Bar with Instant Barista Batch Actions */}
+        {/* Status Bar */}
         <div className="px-5 py-3.5 bg-[#ede7dc] dark:bg-[#18181c] border-b border-[#ded8ce] dark:border-[#26262b] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-3 sm:space-x-4 flex-wrap gap-y-1">
             <div className="flex items-center space-x-1.5">
@@ -235,11 +262,11 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
             </div>
           </div>
 
-          {/* Barista Quick Action */}
-          {sanitizingCount > 0 && (
+          {/* STAFF ONLY: Batch Action Button */}
+          {isStaff && sanitizingCount > 0 && (
             <button
               onClick={handleMarkAllSanitizedAsAvailable}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all animate-pulse"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-all"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Mark All {sanitizingCount} Sanitized Tables Available</span>
@@ -294,7 +321,11 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
         {/* Footer */}
         <div className="p-4 sm:p-5 border-t border-[#e8e2d8] dark:border-[#222226] bg-[#f5f1ea] dark:bg-[#16161a] flex items-center justify-between text-xs">
           <span className="text-[#666666] dark:text-[#9999a0]">
-            💡 Baristas can click any status button (Available, Occupied, Reserved, Sanitizing) on a table to update it in real time.
+            {isStaff
+              ? '💡 Staff Controls: Click any status button on a table to update in real time.'
+              : selectedTableNumber
+              ? `Selected Table #${selectedTableNumber} for your dine-in order.`
+              : 'Dine-in guests can select an available table to receive orders directly.'}
           </span>
           <button
             onClick={onClose}

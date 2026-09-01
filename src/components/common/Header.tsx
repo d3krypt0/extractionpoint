@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'customer', fullLabel: 'Menu Ordering', shortLabel: 'Menu', icon: <Coffee className="w-4 h-4" /> },
     { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-4 h-4" />, badge: activeOrders.length },
     { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-4 h-4" /> },
-    { id: 'inventory', fullLabel: 'Inventory & Waste', shortLabel: 'Inventory', icon: <Package className="w-4 h-4" /> },
+    { id: 'inventory', fullLabel: 'Inventory & Stocks', shortLabel: 'Stocks', icon: <Package className="w-4 h-4" /> },
     { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: isTrackerBadgeActive ? 1 : 0 },
   ];

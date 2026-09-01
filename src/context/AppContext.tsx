@@ -95,7 +95,7 @@ interface AppContextType {
   seatQueueTicket: (ticketId: string, tableNumber?: number) => void;
   cancelQueueTicket: (ticketId: string) => void;
 
-  // Inventory & Waste
+  // Inventory & Stocks
   inventory: InventoryItem[];
   restockInventory: (ingredientId: string, quantityToAdd: number) => void;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;

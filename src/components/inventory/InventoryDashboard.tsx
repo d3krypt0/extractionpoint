@@ -189,10 +189,10 @@ export const InventoryDashboard: React.FC = () => {
           </div>
           <div>
             <h2 className="font-serif font-bold text-lg text-[#111111] dark:text-[#f8f7f4]">
-              Inventory & Food Waste Minimization
+              Inventory & Stocks Management
             </h2>
             <p className="text-[11px] text-gray-500">
-              Ingredient-level tracking, real-time recipe depletion & manual stock overrides
+              Ingredient-level tracking, real-time stock levels & manual overrides
             </p>
           </div>
         </div>
@@ -203,7 +203,7 @@ export const InventoryDashboard: React.FC = () => {
             className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs hover:opacity-90 transition-all shadow-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Ingredient / Material</span>
+            <span>+ Add Ingredient / Item</span>
           </button>
 
           <button
@@ -391,6 +391,25 @@ export const InventoryDashboard: React.FC = () => {
                   </tr>
                 );
               })}
+              {filteredInventory.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <Package className="w-8 h-8 text-gray-400" />
+                      <p className="text-xs text-gray-500 font-medium">
+                        No inventory or stock items found matching this filter.
+                      </p>
+                      <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="px-4 py-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black font-bold text-xs flex items-center space-x-1.5 shadow-sm hover:opacity-90"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Add Ingredient / Item</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -652,7 +671,7 @@ export const InventoryDashboard: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Plus className="w-4 h-4 text-emerald-500" />
                 <h4 className="font-serif font-bold text-base text-[#111111] dark:text-white">
-                  Add New Raw Material / Ingredient
+                  Add New Ingredient / Item
                 </h4>
               </div>
               <button
@@ -782,7 +801,7 @@ export const InventoryDashboard: React.FC = () => {
                   className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 flex items-center space-x-1.5 shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Create Item</span>
+                  <span>+ Add Item to Stocks</span>
                 </button>
               </div>
             </form>
