@@ -33,15 +33,15 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
     tables, 
     updateTableStatus, 
     isQrCustomerMode, 
-    activeView 
+    isStaffAuthenticated 
   } = useApp();
   
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Staff mode is ONLY active when inside staff portals (POS, KDS, Inventory, Analytics) and not in QR customer mode or table picking
-  const isStaff = !isQrCustomerMode && activeView !== 'customer' && !onSelectTable;
+  // Staff mode is active whenever staff has entered their PIN (isStaffAuthenticated is true) and not picking table for checkout
+  const isStaff = isStaffAuthenticated && !isQrCustomerMode && !onSelectTable;
 
   const indoorTables = tables.filter((t) => t.section === 'indoor');
   const patioTables = tables.filter((t) => t.section === 'patio');

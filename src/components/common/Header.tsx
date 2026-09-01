@@ -63,12 +63,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Full Staff Navigation
   const staffNavItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'customer', fullLabel: 'Menu Ordering', shortLabel: 'Menu', icon: <Coffee className="w-4 h-4" /> },
-    { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-4 h-4" />, badge: activeOrders.length },
-    { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-4 h-4" /> },
-    { id: 'inventory', fullLabel: 'Inventory & Stocks', shortLabel: 'Stocks', icon: <Package className="w-4 h-4" /> },
-    { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-4 h-4" />, badge: isTrackerBadgeActive ? 1 : 0 },
+    { id: 'customer', fullLabel: 'Menu', shortLabel: 'Menu', icon: <Coffee className="w-3.5 h-3.5" /> },
+    { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, badge: activeOrders.length },
+    { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-3.5 h-3.5" /> },
+    { id: 'inventory', fullLabel: 'Inventory & Stocks', shortLabel: 'Stocks', icon: <Package className="w-3.5 h-3.5" /> },
+    { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Z-Report', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-3.5 h-3.5" />, badge: isTrackerBadgeActive ? 1 : 0 },
   ];
 
   // Customer Navigation (Safe for unauthenticated visitors & table QR users)
@@ -79,43 +79,43 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#faf8f5]/95 dark:bg-[#0c0c0e]/95 backdrop-blur-md border-b border-[#e5e0d8] dark:border-[#222226] transition-colors select-none">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+      <header className="sticky top-0 z-40 bg-[#faf8f5]/95 dark:bg-[#0c0c0e]/95 backdrop-blur-md border-b border-[#e5e0d8] dark:border-[#222226] transition-colors select-none w-full">
+        <div className="w-full max-w-screen-2xl mx-auto px-2 sm:px-4 lg:px-6">
           
           {/* Single Main Navbar Row */}
-          <div className="flex items-center justify-between h-16 sm:h-18 gap-2">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-1.5 sm:gap-2">
             
-            {/* Logo & Cafe Brand */}
+            {/* Left: Logo & Cafe Brand */}
             <div 
               onClick={() => setActiveView('customer')}
-              className="flex items-center cursor-pointer group hover:opacity-90 transition-opacity flex-shrink-0"
+              className="flex items-center cursor-pointer group hover:opacity-90 transition-opacity flex-shrink-0 mr-1 sm:mr-2"
             >
               <BrandLogo variant="horizontal" size="sm" showTagline={false} />
             </div>
 
-            {/* NAVIGATION AREA */}
-            {isStaffAuthenticated ? (
-              /* AUTHENTICATED STAFF VIEW: Full POS / KDS / Inventory Navigation */
-              <>
-                <nav className="hidden lg:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
+            {/* Center: NAVIGATION AREA */}
+            <div className="flex-1 flex items-center justify-center min-w-0 px-1">
+              {isStaffAuthenticated ? (
+                /* AUTHENTICATED STAFF VIEW: Compact Full POS / KDS / Inventory Navigation */
+                <nav className="hidden md:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30] max-w-full overflow-x-auto no-scrollbar">
                   {staffNavItems.map((item) => {
                     const isActive = activeView === item.id;
                     return (
                       <button
                         key={item.id}
                         onClick={() => setActiveView(item.id)}
-                        className={`inline-flex items-center justify-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-brand font-bold transition-all relative whitespace-nowrap ${
+                        className={`inline-flex items-center justify-center space-x-1.5 px-2.5 xl:px-3 py-1.5 rounded-xl text-xs font-brand font-bold transition-all relative whitespace-nowrap flex-shrink-0 ${
                           isActive
                             ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-sm'
                             : 'text-[#555555] dark:text-[#a0a0aa] hover:text-[#111111] dark:hover:text-[#f8f7f4] hover:bg-[#e4ded5]/50 dark:hover:bg-[#26262c]/50'
                         }`}
                       >
                         {item.icon}
-                        <span className="hidden xl:inline">{item.fullLabel}</span>
-                        <span className="inline xl:hidden">{item.shortLabel}</span>
+                        <span className="hidden 2xl:inline">{item.fullLabel}</span>
+                        <span className="inline 2xl:hidden">{item.shortLabel}</span>
                         {item.badge !== undefined && item.badge > 0 && (
                           <span
-                            className={`ml-1 px-1.5 py-0.2 text-[9.5px] rounded-full font-bold font-mono ${
+                            className={`ml-1 px-1.5 py-0.2 text-[9px] rounded-full font-bold font-mono ${
                               isActive
                                 ? 'bg-[#c5a880] text-black'
                                 : 'bg-[#c5a880]/25 text-[#9d7f57] dark:text-[#dfcca9]'
@@ -128,28 +128,44 @@ export const Header: React.FC<HeaderProps> = ({
                     );
                   })}
                 </nav>
-
-                {/* Tablet Medium Screen Navigation */}
-                <nav className="hidden md:flex lg:hidden items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
-                  {staffNavItems.map((item) => {
+              ) : isQrCustomerMode || qrTableNumber ? (
+                /* CUSTOMER QR MODE: Table Identification Badge */
+                <div className="flex items-center space-x-2 bg-[#111111] dark:bg-[#18181c] text-white px-3 py-1 rounded-2xl border border-[#c5a880]/40 shadow-sm">
+                  <MapPin className="w-3.5 h-3.5 text-[#c5a880] animate-bounce" />
+                  <span className="font-brand font-bold text-xs">
+                    {qrTableNumber ? `Table ${qrTableNumber}` : 'Self-Ordering'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsStaffPinModalOpen(true)}
+                    className="ml-1.5 text-[10px] text-gray-400 hover:text-white flex items-center space-x-1"
+                    title="Staff Authentication Login"
+                  >
+                    <Lock className="w-3 h-3 text-[#c5a880]" />
+                    <span>Staff</span>
+                  </button>
+                </div>
+              ) : (
+                /* PUBLIC CUSTOMER VIEW: Safe navigation for all visitors */
+                <nav className="hidden sm:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
+                  {customerNavItems.map((item) => {
                     const isActive = activeView === item.id;
                     return (
                       <button
                         key={item.id}
                         onClick={() => setActiveView(item.id)}
-                        className={`inline-flex items-center justify-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold transition-all whitespace-nowrap ${
+                        className={`inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-brand font-bold transition-all ${
                           isActive
                             ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-sm'
                             : 'text-[#555555] dark:text-[#a0a0aa] hover:text-[#111111] dark:hover:text-[#f8f7f4]'
                         }`}
-                        title={item.fullLabel}
                       >
                         {item.icon}
-                        <span>{item.shortLabel}</span>
+                        <span>{item.fullLabel}</span>
                         {item.badge !== undefined && item.badge > 0 && (
                           <span
-                            className={`ml-1 px-1.5 py-0.2 text-[9px] rounded-full font-mono font-bold ${
-                              isActive ? 'bg-[#c5a880] text-black' : 'bg-[#c5a880]/25 text-[#9d7f57] dark:text-[#dfcca9]'
+                            className={`ml-1 px-1.5 py-0.2 text-[9.5px] rounded-full font-bold font-mono ${
+                              isActive ? 'bg-[#c5a880] text-black' : 'bg-[#c5a880]/25 text-[#9d7f57]'
                             }`}
                           >
                             {item.badge}
@@ -159,68 +175,21 @@ export const Header: React.FC<HeaderProps> = ({
                     );
                   })}
                 </nav>
-              </>
-            ) : isQrCustomerMode || qrTableNumber ? (
-              /* CUSTOMER QR MODE: Table Identification Badge */
-              <div className="flex items-center space-x-2 bg-[#111111] dark:bg-[#18181c] text-white px-3.5 py-1.5 rounded-2xl border border-[#c5a880]/40 shadow-sm">
-                <MapPin className="w-4 h-4 text-[#c5a880] animate-bounce" />
-                <span className="font-brand font-bold text-xs">
-                  {qrTableNumber ? `Table ${qrTableNumber} (Dine-In)` : 'Self-Ordering'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsStaffPinModalOpen(true)}
-                  className="ml-2 text-[10px] text-gray-400 hover:text-white flex items-center space-x-1"
-                  title="Staff Authentication Login"
-                >
-                  <Lock className="w-3 h-3 text-[#c5a880]" />
-                  <span>Staff</span>
-                </button>
-              </div>
-            ) : (
-              /* PUBLIC CUSTOMER VIEW: Safe navigation for all visitors */
-              <nav className="hidden sm:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
-                {customerNavItems.map((item) => {
-                  const isActive = activeView === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveView(item.id)}
-                      className={`inline-flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-brand font-bold transition-all ${
-                        isActive
-                          ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] shadow-sm'
-                          : 'text-[#555555] dark:text-[#a0a0aa] hover:text-[#111111] dark:hover:text-[#f8f7f4]'
-                      }`}
-                    >
-                      {item.icon}
-                      <span>{item.fullLabel}</span>
-                      {item.badge !== undefined && item.badge > 0 && (
-                        <span
-                          className={`ml-1 px-1.5 py-0.2 text-[9.5px] rounded-full font-bold font-mono ${
-                            isActive ? 'bg-[#c5a880] text-black' : 'bg-[#c5a880]/25 text-[#9d7f57]'
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            )}
+              )}
+            </div>
 
             {/* Right Action Icons & Controls */}
-            <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+            <div className="flex items-center space-x-1 sm:space-x-1.5 flex-shrink-0">
               
               {/* STAFF ONLY: QR Stand Print & Generator Button */}
               {isStaffAuthenticated && (
                 <button
                   onClick={() => setIsQrModalOpen(true)}
-                  className="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#c5a880]/15 text-[#9d7f57] dark:text-[#dfcca9] hover:bg-[#c5a880]/25 border border-[#c5a880]/30 transition-all"
+                  className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#c5a880]/15 text-[#9d7f57] dark:text-[#dfcca9] hover:bg-[#c5a880]/25 border border-[#c5a880]/30 transition-all"
                   title="Print Table QR Stands or Simulate Customer Phone Scan"
                 >
                   <QrCode className="w-3.5 h-3.5 text-[#c5a880]" />
-                  <span className="hidden sm:inline">Table QRs</span>
+                  <span className="hidden sm:inline">QRs</span>
                 </button>
               )}
 
@@ -228,27 +197,27 @@ export const Header: React.FC<HeaderProps> = ({
               {isStaffAuthenticated ? (
                 <button
                   onClick={lockStaffMode}
-                  className="p-2 rounded-xl text-amber-500 hover:bg-amber-500/10 border border-amber-500/30 transition-colors"
+                  className="p-1.5 sm:p-2 rounded-xl text-amber-500 hover:bg-amber-500/10 border border-amber-500/30 transition-colors"
                   title="Lock Staff Terminal (Switch to Customer Mode)"
                 >
-                  <Unlock className="w-4 h-4" />
+                  <Unlock className="w-3.5 h-3.5" />
                 </button>
               ) : (
                 /* Customer View: Discreet Staff Access Button */
                 <button
                   onClick={() => setIsStaffPinModalOpen(true)}
-                  className="p-2 rounded-xl text-gray-400 hover:text-[#111111] dark:hover:text-white hover:bg-[#eae4db] dark:hover:bg-[#222226] transition-colors"
+                  className="p-1.5 sm:p-2 rounded-xl text-gray-400 hover:text-[#111111] dark:hover:text-white hover:bg-[#eae4db] dark:hover:bg-[#222226] transition-colors"
                   title="Staff Portal Login (Enter PIN)"
                 >
                   <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
                 </button>
               )}
 
-              {/* Live Queue Button (Customer quick access) */}
-              {activeView === 'customer' && onOpenQueue && (
+              {/* CUSTOMER ONLY: Live Queue Button */}
+              {!isStaffAuthenticated && activeView === 'customer' && onOpenQueue && (
                 <button
                   onClick={onOpenQueue}
-                  className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
+                  className="hidden md:inline-flex items-center space-x-1 px-2 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
                   title="View Waiting Queue & Party List"
                 >
                   <Users className="w-3.5 h-3.5 text-[#c5a880]" />
@@ -257,11 +226,11 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
 
-              {/* Table Floor Map (Customer quick access) */}
-              {activeView === 'customer' && onOpenTableMap && (
+              {/* CUSTOMER ONLY: Table Floor Map */}
+              {!isStaffAuthenticated && activeView === 'customer' && onOpenTableMap && (
                 <button
                   onClick={onOpenTableMap}
-                  className="hidden xl:inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
+                  className="hidden md:inline-flex items-center space-x-1 px-2 py-1.5 rounded-xl text-xs font-brand font-bold bg-[#efeae1] dark:bg-[#1e1e23] text-[#333333] dark:text-[#dedede] hover:border-[#c5a880] border border-[#ded8ce] dark:border-[#2a2a32] transition-all"
                   title="View Table Availability Map"
                 >
                   <Store className="w-3.5 h-3.5 text-[#c5a880]" />
@@ -272,44 +241,44 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Online Status Dot */}
               <div
                 title={isOnline ? 'System Online & Synced' : 'Offline Mode Active'}
-                className="p-2 rounded-xl text-gray-500 hover:bg-[#eae4db] dark:hover:bg-[#222226] transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-gray-500 hover:bg-[#eae4db] dark:hover:bg-[#222226] transition-colors"
               >
                 {isOnline ? (
-                  <Wifi className="w-4 h-4 text-emerald-500" />
+                  <Wifi className="w-3.5 h-3.5 text-emerald-500" />
                 ) : (
-                  <WifiOff className="w-4 h-4 text-amber-500 animate-pulse" />
+                  <WifiOff className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
                 )}
               </div>
 
               {/* Sound Toggle */}
               <button
                 onClick={toggleSound}
-                className="p-2 rounded-xl text-[#666666] dark:text-[#999999] hover:bg-[#eae4db] dark:hover:bg-[#222226] border border-transparent hover:border-[#ded8ce] dark:hover:border-[#2a2a32] transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-[#666666] dark:text-[#999999] hover:bg-[#eae4db] dark:hover:bg-[#222226] border border-transparent hover:border-[#ded8ce] dark:hover:border-[#2a2a32] transition-colors"
                 title={soundEnabled ? 'Mute Sound Chimes' : 'Enable Sound Chimes'}
               >
-                {soundEnabled ? <Volume2 className="w-4 h-4 text-[#111111] dark:text-white" /> : <VolumeX className="w-4 h-4 text-red-500" />}
+                {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#111111] dark:text-white" /> : <VolumeX className="w-3.5 h-3.5 text-red-500" />}
               </button>
 
               {/* Dark / Light Mode Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-xl text-[#666666] dark:text-[#999999] hover:bg-[#eae4db] dark:hover:bg-[#222226] border border-transparent hover:border-[#ded8ce] dark:hover:border-[#2a2a32] transition-colors"
+                className="p-1.5 sm:p-2 rounded-xl text-[#666666] dark:text-[#999999] hover:bg-[#eae4db] dark:hover:bg-[#222226] border border-transparent hover:border-[#ded8ce] dark:hover:border-[#2a2a32] transition-colors"
                 title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4 text-[#dfcca9]" /> : <Moon className="w-4 h-4 text-[#111111]" />}
+                {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-[#dfcca9]" /> : <Moon className="w-3.5 h-3.5 text-[#111111]" />}
               </button>
 
               {/* Cart Drawer Trigger */}
               {onOpenCart && (
                 <button
                   onClick={onOpenCart}
-                  className="relative inline-flex items-center justify-center px-3 py-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] hover:opacity-90 active:scale-95 transition-all shadow-md font-brand font-bold text-xs"
+                  className="relative inline-flex items-center justify-center px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] hover:opacity-90 active:scale-95 transition-all shadow-md font-brand font-bold text-xs flex-shrink-0"
                   title="View Cart & Checkout"
                 >
-                  <ShoppingBag className="w-4 h-4 sm:mr-1.5" />
+                  <ShoppingBag className="w-3.5 h-3.5 sm:mr-1" />
                   <span className="hidden sm:inline">Cart</span>
                   {cartTotals.itemCount > 0 ? (
-                    <span className="ml-1.5 px-1.5 py-0.2 rounded-md bg-[#c5a880] text-black font-black font-mono text-[10px]">
+                    <span className="ml-1 px-1.5 py-0.2 rounded-md bg-[#c5a880] text-black font-black font-mono text-[10px]">
                       {cartTotals.itemCount}
                     </span>
                   ) : null}
