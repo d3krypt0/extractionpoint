@@ -182,19 +182,20 @@ export const TableAvailabilityMap: React.FC<TableAvailabilityMapProps> = ({
             </button>
           )}
 
-          {/* STAFF ONLY: Quick Status Selector Pills */}
+          {/* STAFF ONLY: Quick Status Selector Buttons (Responsive Grid) */}
           {isStaff && (
-            <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 w-full pt-1">
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={(e) => handleQuickStatusChange(table, opt.id, e)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                  className={`w-full py-1.5 px-1 rounded-lg text-[10px] sm:text-[10.5px] font-bold text-center transition-all truncate leading-tight ${
                     table.status === opt.id
-                      ? `${opt.color} shadow-xs scale-105`
+                      ? `${opt.color} shadow-xs font-black ring-1 ring-black/10`
                       : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10'
                   }`}
+                  title={opt.label}
                 >
                   {opt.label}
                 </button>

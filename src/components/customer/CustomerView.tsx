@@ -363,11 +363,23 @@ export const CustomerView: React.FC = () => {
             return null;
           }
 
-          // Get sections belonging to this super group
+          // Collect all predefined sections belonging to this super group
           const groupSections = MENU_SECTIONS.filter((s) => s.group === superGroup);
+          const allSectionsInGroup: MenuSectionDef[] = [...groupSections];
           
+          // Safety fallback: if any items exist in itemsByCategory for this superGroup without a static section definition, include it
+          itemsByCategory.forEach((items, cat) => {
+            if (items.some((it) => it.group === superGroup) && !allSectionsInGroup.some((s) => s.id === cat)) {
+              allSectionsInGroup.push({
+                id: cat,
+                title: cat.replace('_', ' ').toUpperCase(),
+                group: superGroup,
+              });
+            }
+          });
+
           // Check if there are any matching items in this super group
-          const hasItemsInGroup = groupSections.some((s) => {
+          const hasItemsInGroup = allSectionsInGroup.some((s) => {
             const items = itemsByCategory.get(s.id);
             return items && items.length > 0;
           });
@@ -403,7 +415,7 @@ export const CustomerView: React.FC = () => {
 
               {/* Grid of Distinctive Black Banner Sections */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
-                {groupSections.map((section) => {
+                {allSectionsInGroup.map((section) => {
                   const items = itemsByCategory.get(section.id) || [];
                   if (items.length === 0) return null;
 

@@ -173,7 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.history.pushState(null, '', path);
       setCurrentPath(path);
       if (path.startsWith('/admin') || path.startsWith('/staff')) {
-        setActiveView('kitchen');
+        setActiveView('pos');
       } else {
         setActiveView('customer');
       }
@@ -190,21 +190,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   });
   const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState<boolean>(false);
-  const [pendingStaffView, setPendingStaffView] = useState<ActiveView>('kitchen');
+  const [pendingStaffView, setPendingStaffView] = useState<ActiveView>('pos');
 
-  // Theme & App Navigation
+  // Theme & App Navigation (Default: Light Theme & POS as first admin tab)
   const [activeView, setActiveView] = useState<ActiveView>(() => {
     if (typeof window !== 'undefined') {
       if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/staff')) {
-        return 'kitchen';
+        return 'pos';
       }
     }
     return 'customer';
   });
+
+  const SCHEMA_RESET_VERSION = 'v8_light_pos_full_sync';
+
+  // Execute clean cache sync on startup to ensure iPad Safari & Chrome load fresh official PDF menu & light theme
+  if (typeof window !== 'undefined') {
+    const currentVersion = localStorage.getItem(`${STORAGE_PREFIX}schema_version`);
+    if (currentVersion !== SCHEMA_RESET_VERSION) {
+      localStorage.setItem(`${STORAGE_PREFIX}schema_version`, SCHEMA_RESET_VERSION);
+      localStorage.setItem(`${STORAGE_PREFIX}menu_version`, SCHEMA_RESET_VERSION);
+      localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(MENU_ITEMS));
+      localStorage.removeItem(`${STORAGE_PREFIX}customer_table_num`);
+      localStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
+      localStorage.setItem(`${STORAGE_PREFIX}theme`, 'light');
+    }
+  }
+
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}theme`);
-    return saved === 'light' ? 'light' : 'dark'; // Default to dark luxury editorial theme
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`${STORAGE_PREFIX}theme`);
+      if (saved === 'dark') return 'dark';
+    }
+    return 'light'; // Default to light luxury editorial theme
   });
+
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [kdsStationFilter, setKdsStationFilter] = useState<KitchenStation>('all');
@@ -220,26 +240,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
-  // Persistent Customer QR Mode Safeguard:
-  // If user entered from a QR link (?table=X or ?mode=customer_qr) OR this device was tagged as customer,
-  // KEEP THEM IN CUSTOMER MODE unless staff enters the 4-digit PIN!
+  // Customer QR Mode: ONLY active when QR parameter is in URL
   const [isQrCustomerMode, setIsQrCustomerMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const isQr = params.has('table') || params.get('mode') === 'customer_qr' || params.get('mode') === 'qr';
-      if (isQr) {
-        localStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
-        sessionStorage.setItem(`${STORAGE_PREFIX}is_customer_device`, 'true');
-        return true;
-      }
-      // If not staff authenticated and tagged as customer device
-      const isTaggedCustomer = localStorage.getItem(`${STORAGE_PREFIX}is_customer_device`) === 'true';
-      const isStaff = sessionStorage.getItem(`${STORAGE_PREFIX}staff_auth`) === 'true';
-      return isTaggedCustomer && !isStaff;
+      return params.has('table') || params.get('mode') === 'customer_qr' || params.get('mode') === 'qr';
     }
     return false;
   });
 
+  // Table Number: ONLY active from active QR query param
   const [qrTableNumber, setQrTableNumber] = useState<number | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -247,14 +257,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (tableParam) {
         const num = parseInt(tableParam, 10);
         if (!isNaN(num) && num > 0) {
-          localStorage.setItem(`${STORAGE_PREFIX}customer_table_num`, String(num));
           return num;
         }
-      }
-      const savedTable = localStorage.getItem(`${STORAGE_PREFIX}customer_table_num`);
-      if (savedTable) {
-        const num = parseInt(savedTable, 10);
-        if (!isNaN(num) && num > 0) return num;
       }
     }
     return null;
@@ -264,14 +268,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return localStorage.getItem(`${STORAGE_PREFIX}trackedOrderId`) || null;
   });
 
-  // Menu Schema Version to automatically bust stale localStorage cache across all browsers & devices
-  const MENU_SCHEMA_VERSION = 'v5_pdf_official_shizuoka';
-
   // Menu items with sold-out persistence & auto-sync with latest official PDF menu
   const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedVersion = localStorage.getItem(`${STORAGE_PREFIX}menu_version`);
-      if (savedVersion === MENU_SCHEMA_VERSION) {
+      if (savedVersion === SCHEMA_RESET_VERSION) {
         const saved = localStorage.getItem(`${STORAGE_PREFIX}menu`);
         if (saved) {
           try {
@@ -279,10 +280,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (Array.isArray(parsed) && parsed.length > 0) return parsed;
           } catch {}
         }
-      } else {
-        // Cache is stale or missing version: write latest version & load fresh official menu
-        localStorage.setItem(`${STORAGE_PREFIX}menu_version`, MENU_SCHEMA_VERSION);
-        localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(MENU_ITEMS));
       }
     }
     return MENU_ITEMS;

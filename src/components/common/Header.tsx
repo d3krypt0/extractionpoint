@@ -49,7 +49,6 @@ export const Header: React.FC<HeaderProps> = ({
     orders,
     trackedOrderId,
     queue,
-    isQrCustomerMode,
     qrTableNumber,
     lockStaffMode,
     isAdminRoute,
@@ -62,10 +61,10 @@ export const Header: React.FC<HeaderProps> = ({
   const activeTrackedOrder = orders.find((o) => o.id === trackedOrderId);
   const isTrackerBadgeActive = activeTrackedOrder && activeTrackedOrder.status !== 'completed' && activeTrackedOrder.status !== 'served';
 
-  // Admin Console Navigation
+  // Admin Console Navigation (POS as default / first tab)
   const adminNavItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, badge: activeOrders.length },
     { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-3.5 h-3.5" /> },
+    { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, badge: activeOrders.length },
     { id: 'inventory', fullLabel: 'Inventory & Stocks', shortLabel: 'Stocks', icon: <Package className="w-3.5 h-3.5" /> },
     { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Z-Report', icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-3.5 h-3.5" />, badge: isTrackerBadgeActive ? 1 : 0 },
@@ -89,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div 
               onClick={() => {
                 if (isAdminRoute) {
-                  setActiveView('kitchen');
+                  setActiveView('pos');
                 } else {
                   setActiveView('customer');
                 }
@@ -140,20 +139,14 @@ export const Header: React.FC<HeaderProps> = ({
                     );
                   })}
                 </nav>
-              ) : isQrCustomerMode || qrTableNumber ? (
-                /* CUSTOMER QR MODE: Prominent High-Legibility Table Badge */
+              ) : qrTableNumber ? (
+                /* CUSTOMER QR MODE: Prominent High-Legibility Table Badge (ONLY if scanned from a QR table) */
                 <div className="flex items-center space-x-2 bg-[#111111] dark:bg-black text-white px-3.5 sm:px-4 py-1.5 rounded-full border-2 border-[#c5a880] shadow-md flex-shrink-0 animate-fadeIn">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
                   <MapPin className="w-4 h-4 text-[#c5a880] flex-shrink-0" />
                   <span className="font-sans font-black text-xs sm:text-sm tracking-wide uppercase text-white whitespace-nowrap">
-                    {qrTableNumber ? (
-                      <>
-                        TABLE <span className="text-[#c5a880] font-mono text-sm sm:text-base font-black px-1.5 py-0.5 rounded bg-white/10 ml-0.5">{qrTableNumber}</span>
-                        <span className="hidden xs:inline ml-1.5 text-[10.5px] font-bold text-gray-300 font-sans tracking-normal">(DINE-IN)</span>
-                      </>
-                    ) : (
-                      'DINE-IN ORDER'
-                    )}
+                    TABLE <span className="text-[#c5a880] font-mono text-sm sm:text-base font-black px-1.5 py-0.5 rounded bg-white/10 ml-0.5">{qrTableNumber}</span>
+                    <span className="hidden xs:inline ml-1.5 text-[10.5px] font-bold text-gray-300 font-sans tracking-normal">(DINE-IN)</span>
                   </span>
                 </div>
               ) : (
