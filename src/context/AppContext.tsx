@@ -123,11 +123,16 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Storage Keys
+// Storage Keys & Real-Time Sync
 const STORAGE_PREFIX = 'ext_point_';
 const CHANNEL_NAME = 'extraction_point_sync_channel';
+const CLOUD_SYNC_TOPIC = 'extpoint_orders_cloud_sync_v2';
+const CLOUD_SYNC_URL = `https://ntfy.sh/${CLOUD_SYNC_TOPIC}`;
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Unique Client ID to prevent double-processing self-emitted cloud events
+  const clientId = useMemo(() => 'cl_' + Math.random().toString(36).substring(2, 9), []);
+
   // Theme & App Navigation
   const [activeView, setActiveView] = useState<ActiveView>('customer');
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -280,7 +285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
-  // Broadcast Channel for Instant Multi-Tab Synchronous Updates
+  // Broadcast Channel for Instant Same-Device Multi-Tab Synchronous Updates
   const syncChannel = useMemo(() => {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       return new BroadcastChannel(CHANNEL_NAME);
@@ -288,11 +293,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   }, []);
 
+  // Multi-transport broadcast: Same-device BroadcastChannel + Cross-device Cloud PubSub
   const broadcastStateChange = useCallback((type: string, payload?: unknown) => {
+    // 1. Same-device local tabs
     if (syncChannel) {
-      syncChannel.postMessage({ type, payload, timestamp: Date.now() });
+      syncChannel.postMessage({ type, payload, senderId: clientId, timestamp: Date.now() });
     }
-  }, [syncChannel]);
+
+    // 2. Cross-device real-time cloud stream (Phone -> Kitchen Tablet/PC)
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      fetch(CLOUD_SYNC_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: clientId,
+          type,
+          payload,
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    }
+  }, [syncChannel, clientId]);
 
   // Online / Offline listeners
   useEffect(() => {
@@ -317,15 +338,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_PREFIX}theme`, theme);
   }, [theme]);
 
-  // Listen to BroadcastChannel for multi-tab sync
+  // Listen to Local BroadcastChannel for same-device multi-tab sync
   useEffect(() => {
     if (!syncChannel) return;
 
     const handleMessage = (event: MessageEvent) => {
-      const { type, payload } = event.data;
+      const { type, payload, senderId } = event.data;
+      if (senderId && senderId === clientId) return;
+
       if (type === 'MENU_UPDATE' && payload?.menuItems) {
         setMenuItems(payload.menuItems);
-      } else if (type === 'SYNC_ALL' || type === 'ORDER_PLACED' || type === 'ORDER_UPDATED') {
+      } else if (type === 'SYNC_ALL' || type === 'ORDER_PLACED' || type === 'ORDER_UPDATED' || type === 'STATUS_UPDATED') {
         const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
         if (savedOrders) setOrders(JSON.parse(savedOrders));
         const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
@@ -345,7 +368,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     syncChannel.addEventListener('message', handleMessage);
     return () => syncChannel.removeEventListener('message', handleMessage);
-  }, [syncChannel, soundEnabled]);
+  }, [syncChannel, soundEnabled, clientId]);
+
+  // Cross-device Real-Time Cloud Synchronization (Phone QR -> Kitchen KDS / POS on any device)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let es: EventSource | null = null;
+    let isSubscribed = true;
+
+    const initCloudStream = () => {
+      try {
+        es = new EventSource(`${CLOUD_SYNC_URL}/sse`);
+
+        es.onmessage = (event) => {
+          if (!isSubscribed || !event.data) return;
+          try {
+            const raw = JSON.parse(event.data);
+            if (!raw || raw.event === 'open' || raw.event === 'keepalive') return;
+
+            const msg = raw.message ? (typeof raw.message === 'string' ? JSON.parse(raw.message) : raw.message) : raw;
+
+            // Ignore events emitted by our own client instance
+            if (msg.senderId && msg.senderId === clientId) return;
+
+            if (msg.type === 'ORDER_PLACED' && (msg.payload?.order || msg.payload)) {
+              const orderData: Order = msg.payload.order || msg.payload;
+              const sanitizedOrder: Order = {
+                ...orderData,
+                items: (orderData.items || []).map((it) => ({
+                  ...it,
+                  menuItem: it.menuItem || MENU_ITEMS.find((m) => m.id === it.menuItem?.id) || MENU_ITEMS[0],
+                })),
+              };
+
+              setOrders((prev) => {
+                if (prev.some((o) => o.id === sanitizedOrder.id)) return prev;
+                const next = [sanitizedOrder, ...prev];
+                localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
+                return next;
+              });
+
+              if (msg.payload?.tables) {
+                setTables(msg.payload.tables);
+                localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(msg.payload.tables));
+              }
+
+              if (soundEnabled) {
+                sounds.playNewOrderChime();
+              }
+            } else if (msg.type === 'STATUS_UPDATED' && msg.payload?.orderId && msg.payload?.status) {
+              setOrders((prev) => {
+                const next = prev.map((o) =>
+                  o.id === msg.payload.orderId ? { ...o, status: msg.payload.status } : o
+                );
+                localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
+                return next;
+              });
+
+              if (msg.payload.status === 'ready' && soundEnabled) {
+                sounds.playOrderReadyChime();
+              }
+            } else if (msg.type === 'MENU_UPDATE' && msg.payload?.menuItems) {
+              setMenuItems(msg.payload.menuItems);
+              localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(msg.payload.menuItems));
+            } else if (msg.type === 'ITEM_CHECK_TOGGLED' && msg.payload?.orderId && msg.payload?.cartId) {
+              setOrders((prev) => {
+                const next = prev.map((o) => {
+                  if (o.id !== msg.payload.orderId) return o;
+                  return {
+                    ...o,
+                    itemStatuses: {
+                      ...o.itemStatuses,
+                      [msg.payload.cartId]: !o.itemStatuses?.[msg.payload.cartId],
+                    },
+                  };
+                });
+                localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
+                return next;
+              });
+            } else if (msg.type === 'TABLES_UPDATE' && msg.payload?.tables) {
+              setTables(msg.payload.tables);
+              localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(msg.payload.tables));
+            }
+          } catch (e) {
+            console.warn('Error parsing incoming cloud sync event:', e);
+          }
+        };
+
+        es.onerror = () => {
+          if (es) {
+            es.close();
+            es = null;
+          }
+          if (isSubscribed) {
+            setTimeout(initCloudStream, 4000);
+          }
+        };
+      } catch (err) {
+        console.warn('Cloud sync initialization failed:', err);
+      }
+    };
+
+    initCloudStream();
+
+    return () => {
+      isSubscribed = false;
+      if (es) es.close();
+    };
+  }, [clientId, soundEnabled]);
 
   // Persistent storage writers
   useEffect(() => {
