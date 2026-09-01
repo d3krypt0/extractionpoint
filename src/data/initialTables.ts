@@ -15,9 +15,7 @@ export const INITIAL_TABLES: Table[] = [
     name: 'Table 2',
     capacity: 2,
     section: 'indoor',
-    status: 'occupied',
-    activeCustomerName: 'Sofia Gomez',
-    lastOccupiedAt: Date.now() - 1000 * 60 * 25,
+    status: 'available',
   },
   {
     id: 'tbl-3',
@@ -41,9 +39,7 @@ export const INITIAL_TABLES: Table[] = [
     name: 'Table 5 (Communal)',
     capacity: 6,
     section: 'indoor',
-    status: 'occupied',
-    activeCustomerName: 'Dev Team Meeting',
-    lastOccupiedAt: Date.now() - 1000 * 60 * 45,
+    status: 'available',
   },
   {
     id: 'tbl-6',
@@ -51,7 +47,7 @@ export const INITIAL_TABLES: Table[] = [
     name: 'Table 6',
     capacity: 2,
     section: 'indoor',
-    status: 'cleaning',
+    status: 'available',
   },
   {
     id: 'tbl-7',
@@ -67,8 +63,7 @@ export const INITIAL_TABLES: Table[] = [
     name: 'Patio 2 (Breeze)',
     capacity: 4,
     section: 'patio',
-    status: 'reserved',
-    activeCustomerName: 'Atty. Cruz Party',
+    status: 'available',
   },
   {
     id: 'tbl-9',
@@ -92,9 +87,7 @@ export const INITIAL_TABLES: Table[] = [
     name: 'Bar Counter 2',
     capacity: 1,
     section: 'bar',
-    status: 'occupied',
-    activeCustomerName: 'Marco P.',
-    lastOccupiedAt: Date.now() - 1000 * 60 * 12,
+    status: 'available',
   },
   {
     id: 'tbl-bar-3',

@@ -176,7 +176,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [trackedOrderId, setTrackedOrderId] = useState<string | null>(() => {
-    return localStorage.getItem(`${STORAGE_PREFIX}trackedOrderId`) || 'ord-101';
+    return localStorage.getItem(`${STORAGE_PREFIX}trackedOrderId`) || null;
   });
 
   // Menu items with sold-out persistence
@@ -197,13 +197,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
-  // Orders with item validation fallback
+  // Orders with dummy data filter
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}orders`);
     if (saved) {
       try {
         const parsed: Order[] = JSON.parse(saved);
-        return parsed.map((o) => ({
+        // Exclude old mock demo orders
+        const filtered = parsed.filter((o) => !['ord-101', 'ord-102', 'ord-103'].includes(o.id));
+        return filtered.map((o) => ({
           ...o,
           items: (o.items || []).map((it) => ({
             ...it,
@@ -219,7 +221,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [tables, setTables] = useState<Table[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}tables`);
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try { 
+        const parsed: Table[] = JSON.parse(saved);
+        // Clean out any legacy mock customer occupancy
+        return parsed.map((tbl) => {
+          if (['Sofia Gomez', 'Dev Team Meeting', 'Atty. Cruz Party', 'Marco P.'].includes(tbl.activeCustomerName || '')) {
+            return { ...tbl, status: 'available', activeCustomerName: undefined, activeOrderId: undefined };
+          }
+          return tbl;
+        });
+      } catch {}
     }
     return INITIAL_TABLES;
   });
@@ -228,7 +239,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [queue, setQueue] = useState<QueueTicket[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}queue`);
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try { 
+        const parsed: QueueTicket[] = JSON.parse(saved);
+        return parsed.filter((q) => !['q-101', 'q-102'].includes(q.id));
+      } catch {}
     }
     return INITIAL_QUEUE;
   });
@@ -242,38 +256,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_INVENTORY;
   });
 
-  // Waste Logs
+  // Waste Logs (Clean & Empty)
   const [wasteLogs, setWasteLogs] = useState<WasteLog[]>(() => {
     const saved = localStorage.getItem(`${STORAGE_PREFIX}waste`);
     if (saved) {
-      try { return JSON.parse(saved); } catch {}
+      try { 
+        const parsed: WasteLog[] = JSON.parse(saved);
+        return parsed.filter((w) => !['w-01', 'w-02'].includes(w.id));
+      } catch {}
     }
-    return [
-      {
-        id: 'w-01',
-        timestamp: Date.now() - 1000 * 60 * 60 * 3,
-        itemId: 'ing-fresh-milk',
-        itemName: 'Fresh Dairy Barista Milk',
-        quantity: 1.5,
-        unit: 'L',
-        costPhp: 165,
-        reason: 'barista_error',
-        loggedBy: 'Barista Carlo',
-        notes: 'Over-steamed and scalded milk pitcher',
-      },
-      {
-        id: 'w-02',
-        timestamp: Date.now() - 1000 * 60 * 60 * 5,
-        itemId: 'ing-croissant',
-        itemName: 'French Butter Croissants',
-        quantity: 2,
-        unit: 'pcs',
-        costPhp: 90,
-        reason: 'quality_rejection',
-        loggedBy: 'Kitchen Chef Mark',
-        notes: 'Uneven oven rise',
-      }
-    ];
+    return [];
   });
 
   // Z-Reading Reports
