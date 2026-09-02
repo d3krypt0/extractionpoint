@@ -63,9 +63,16 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
     e.preventDefault();
     if (cart.length === 0) return;
 
-    if (orderType === 'dine_in' && !selectedTableForOrdering) {
-      alert('Please select your table number for dine-in.');
-      return;
+    if (orderType === 'dine_in') {
+      if (!selectedTableForOrdering) {
+        alert('Please select your table number for dine-in.');
+        return;
+      }
+      const targetTable = tables.find((t) => t.number === selectedTableForOrdering);
+      if (targetTable && targetTable.status !== 'available') {
+        alert(`Table #${selectedTableForOrdering} is currently ${targetTable.status.toUpperCase()}. Please choose an available table.`);
+        return;
+      }
     }
 
     if (paymentMethod === 'gcash') {
@@ -90,6 +97,14 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
 
   const handleGCashSuccess = (details: { gcashRef: string; gcashMobile: string }) => {
     setIsGCashModalOpen(false);
+    if (orderType === 'dine_in' && selectedTableForOrdering) {
+      const targetTable = tables.find((t) => t.number === selectedTableForOrdering);
+      if (targetTable && targetTable.status !== 'available') {
+        alert(`Table #${selectedTableForOrdering} is currently ${targetTable.status.toUpperCase()}. Please choose an available table.`);
+        return;
+      }
+    }
+
     placeOrder({
       type: orderType,
       tableNumber: orderType === 'dine_in' ? selectedTableForOrdering || undefined : undefined,
@@ -307,11 +322,14 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
                         className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#202024] border border-[#ded8ce] dark:border-[#2c2c32] text-xs font-bold text-[#111111] dark:text-white"
                       >
                         <option value="">Choose Table...</option>
-                        {tables.map((tbl) => (
-                          <option key={tbl.id} value={tbl.number} disabled={tbl.status === 'occupied' || tbl.status === 'reserved'}>
-                            {tbl.name} ({tbl.capacity}pax) {tbl.status !== 'available' ? `[${tbl.status}]` : ''}
-                          </option>
-                        ))}
+                        {tables.map((tbl) => {
+                          const isAvail = tbl.status === 'available';
+                          return (
+                            <option key={tbl.id} value={tbl.number} disabled={!isAvail}>
+                              {tbl.name} ({tbl.capacity}pax) — {isAvail ? 'Available' : `[${tbl.status.toUpperCase()}]`}
+                            </option>
+                          );
+                        })}
                       </select>
 
                       {onOpenTableMap && (

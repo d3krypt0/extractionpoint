@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp, AppProvider } from './context/AppContext';
 import { Header } from './components/common/Header';
+import { AdminSidebar } from './components/common/AdminSidebar';
 import { CustomerView } from './components/customer/CustomerView';
 import { KitchenDashboard } from './components/kitchen/KitchenDashboard';
 import { PosDashboard } from './components/pos/PosDashboard';
@@ -10,6 +11,7 @@ import { LiveOrderTracker } from './components/customer/LiveOrderTracker';
 import { CartCheckoutModal } from './components/customer/CartCheckoutModal';
 import { TableAvailabilityMap } from './components/customer/TableAvailabilityMap';
 import { QueueSystemModal } from './components/customer/QueueSystemModal';
+import { TableQrStandModal } from './components/customer/TableQrStandModal';
 import { AdminLoginView } from './components/admin/AdminLoginView';
 import { StaffPinModal } from './components/common/StaffPinModal';
 import { BrandLogo } from './components/common/BrandLogo';
@@ -28,6 +30,7 @@ const MainLayout: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isTableMapOpen, setIsTableMapOpen] = useState(false);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Global Keyboard Shortcuts (POS & Kitchen Fast Toggles)
   useEffect(() => {
@@ -36,6 +39,7 @@ const MainLayout: React.FC = () => {
         setIsCartOpen(false);
         setIsTableMapOpen(false);
         setIsQueueOpen(false);
+        setIsQrModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -47,7 +51,45 @@ const MainLayout: React.FC = () => {
     return <AdminLoginView />;
   }
 
-  // 2. MAIN LAYOUT (Customer Storefront / or Authenticated Admin /admin)
+  // 2. ADMIN CONSOLE LAYOUT (Dedicated Left Sidebar Navigation)
+  if (isAdminRoute) {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row bg-[#faf8f5] dark:bg-[#0a0a0a] text-[#1a1715] dark:text-[#f4f2ee] transition-colors duration-200">
+        
+        {/* Offline Alert Banner */}
+        {!isOnline && (
+          <div className="md:fixed top-0 inset-x-0 z-50 bg-amber-500 text-black px-4 py-2 text-xs font-bold flex items-center justify-center space-x-2 shadow-md">
+            <WifiOff className="w-4 h-4" />
+            <span>Offline Mode Active: Local caching enabled. Orders and updates will sync once reconnected.</span>
+          </div>
+        )}
+
+        {/* Left Navigation Sidebar */}
+        <AdminSidebar onOpenQrModal={() => setIsQrModalOpen(true)} />
+
+        {/* Main Admin Content Container */}
+        <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto">
+          <div className="flex-1">
+            {activeView === 'kitchen' && <KitchenDashboard />}
+            {activeView === 'pos' && <PosDashboard />}
+            {activeView === 'tables' && <TableAvailabilityMap isPageInline={true} />}
+            {activeView === 'inventory' && <InventoryDashboard />}
+            {activeView === 'analytics' && <AnalyticsDashboard />}
+            {activeView === 'tracker' && <LiveOrderTracker />}
+            {activeView === 'customer' && <CustomerView />}
+          </div>
+        </main>
+
+        {/* Table QR Stand Generator Modal */}
+        <TableQrStandModal
+          isOpen={isQrModalOpen}
+          onClose={() => setIsQrModalOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  // 3. CUSTOMER STOREFRONT LAYOUT (Online Digital Menu & Storefront)
   return (
     <div className="min-h-screen flex flex-col bg-[#faf8f5] dark:bg-[#0a0a0a] text-[#1a1715] dark:text-[#f4f2ee] transition-colors duration-200">
       
@@ -59,33 +101,17 @@ const MainLayout: React.FC = () => {
         </div>
       )}
 
-      {/* Main Top Header */}
+      {/* Main Top Header for Storefront */}
       <Header
         onOpenCart={() => setIsCartOpen(true)}
         onOpenTableMap={() => setIsTableMapOpen(true)}
         onOpenQueue={() => setIsQueueOpen(true)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1">
-        {isAdminRoute ? (
-          /* ADMIN CONSOLE VIEWS */
-          <>
-            {activeView === 'kitchen' && <KitchenDashboard />}
-            {activeView === 'pos' && <PosDashboard />}
-            {activeView === 'tables' && <TableAvailabilityMap isPageInline={true} />}
-            {activeView === 'inventory' && <InventoryDashboard />}
-            {activeView === 'analytics' && <AnalyticsDashboard />}
-            {activeView === 'tracker' && <LiveOrderTracker />}
-            {activeView === 'customer' && <CustomerView />}
-          </>
-        ) : (
-          /* CUSTOMER ONLINE STOREFRONT VIEWS */
-          <>
-            {activeView === 'tracker' ? <LiveOrderTracker /> : <CustomerView />}
-          </>
-        )}
-      </div>
+      {/* Main Customer Content Area */}
+      <main className="flex-1">
+        {activeView === 'tracker' ? <LiveOrderTracker /> : <CustomerView />}
+      </main>
 
       {/* Footer */}
       <footer className="bg-white dark:bg-[#0d0d0f] border-t border-[#e8e2d8] dark:border-[#1e1e24] py-8 px-4 text-xs text-gray-500 dark:text-gray-400">

@@ -68,6 +68,11 @@ export const PosDashboard: React.FC = () => {
     });
   }, [menuItems, activeGroup, activeCategory, searchQuery]);
 
+  const selectedTableObj = useMemo(() => {
+    if (!selectedTableForOrdering) return null;
+    return tables.find((t) => t.number === selectedTableForOrdering) || null;
+  }, [tables, selectedTableForOrdering]);
+
   const handleCashTenderPreset = (amount: number) => {
     setCashTendered(amount);
   };
@@ -76,9 +81,20 @@ export const PosDashboard: React.FC = () => {
     e.preventDefault();
     if (cart.length === 0) return;
 
-    if (orderType === 'dine_in' && !selectedTableForOrdering) {
-      alert('Please select table number for dine-in.');
-      return;
+    if (orderType === 'dine_in') {
+      if (!selectedTableForOrdering) {
+        alert('Please select a table number for dine-in.');
+        return;
+      }
+      const targetTable = tables.find((t) => t.number === selectedTableForOrdering);
+      if (targetTable && targetTable.status !== 'available') {
+        const confirmOverride = window.confirm(
+          `⚠️ Table ${selectedTableForOrdering} is currently marked as ${targetTable.status.toUpperCase()}${
+            targetTable.activeCustomerName ? ` (Guest: ${targetTable.activeCustomerName})` : ''
+          }.\n\nDo you want to add/override this order on Table ${selectedTableForOrdering}?`
+        );
+        if (!confirmOverride) return;
+      }
     }
 
     if (paymentMethod === 'cash' && cashTendered < calculation.totalPayable) {
@@ -293,20 +309,43 @@ export const PosDashboard: React.FC = () => {
               </div>
 
               {orderType === 'dine_in' && (
-                <select
-                  value={selectedTableForOrdering || ''}
-                  onChange={(e) => setSelectedTableForOrdering(Number(e.target.value) || null)}
-                  className="px-2.5 py-1 rounded-lg bg-[#ede7dc] dark:bg-[#202024] text-xs font-bold border border-[#ded8ce] dark:border-[#2c2c32] text-[#111111] dark:text-white"
-                >
-                  <option value="">Select Table...</option>
-                  {tables.map((t) => (
-                    <option key={t.id} value={t.number}>
-                      {t.name} ({t.status})
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center space-x-1.5">
+                  <select
+                    value={selectedTableForOrdering || ''}
+                    onChange={(e) => setSelectedTableForOrdering(Number(e.target.value) || null)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                      selectedTableObj && selectedTableObj.status !== 'available'
+                        ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200'
+                        : 'bg-[#ede7dc] dark:bg-[#202024] border-[#ded8ce] dark:border-[#2c2c32] text-[#111111] dark:text-white'
+                    }`}
+                  >
+                    <option value="">Select Table...</option>
+                    {tables.map((t) => {
+                      const isAvail = t.status === 'available';
+                      return (
+                        <option 
+                          key={t.id} 
+                          value={t.number}
+                          className={!isAvail ? 'text-gray-400 bg-gray-100 dark:bg-zinc-800' : ''}
+                        >
+                          {t.name} ({isAvail ? 'Available' : t.status.toUpperCase()})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
               )}
             </div>
+
+            {/* Warning when selected table is currently occupied / not available */}
+            {orderType === 'dine_in' && selectedTableObj && selectedTableObj.status !== 'available' && (
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                <span>
+                  <strong>Table #{selectedTableForOrdering}</strong> is currently <strong>{selectedTableObj.status.toUpperCase()}</strong>{selectedTableObj.activeCustomerName ? ` (${selectedTableObj.activeCustomerName})` : ''}.
+                </span>
+              </div>
+            )}
 
             {/* Customer Name */}
             <div>
