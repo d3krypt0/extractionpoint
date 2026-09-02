@@ -9,6 +9,7 @@ import {
   Order,
   OrderStatus,
   OrderType,
+  QueueStatus,
   QueueTicket,
   Table,
   TableStatus,
@@ -427,6 +428,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem(`${STORAGE_PREFIX}theme`, theme);
   }, [theme]);
 
+  // Listen to standard window 'storage' events for instant multi-tab synchronization
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key || !e.newValue) return;
+
+      if (e.key === `${STORAGE_PREFIX}tables`) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setTables(parsed);
+        } catch {}
+      } else if (e.key === `${STORAGE_PREFIX}orders`) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setOrders(parsed);
+        } catch {}
+      } else if (e.key === `${STORAGE_PREFIX}menu`) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setMenuItems(parsed);
+        } catch {}
+      } else if (e.key === `${STORAGE_PREFIX}queue`) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setQueue(parsed);
+        } catch {}
+      } else if (e.key === `${STORAGE_PREFIX}inventory`) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed)) setInventory(parsed);
+        } catch {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Listen to Local BroadcastChannel for same-device multi-tab sync
   useEffect(() => {
     if (!syncChannel) return;
@@ -435,12 +475,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const { type, payload, senderId } = event.data;
       if (senderId && senderId === clientId) return;
 
-      if (type === 'TABLES_UPDATE' && payload?.tables) {
-        setTables(payload.tables);
-        localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(payload.tables));
-      } else if (type === 'MENU_UPDATE' && payload?.menuItems) {
-        setMenuItems(payload.menuItems);
-      } else if (type === 'SYNC_ALL' || type === 'ORDER_PLACED' || type === 'ORDER_UPDATED' || type === 'STATUS_UPDATED') {
+      if (type === 'TABLES_UPDATE') {
+        if (payload?.tables) {
+          setTables(payload.tables);
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(payload.tables));
+        } else {
+          const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
+          if (savedTables) setTables(JSON.parse(savedTables));
+        }
+      } else if (type === 'MENU_UPDATE') {
+        if (payload?.menuItems) {
+          setMenuItems(payload.menuItems);
+          localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(payload.menuItems));
+        } else {
+          const savedMenu = localStorage.getItem(`${STORAGE_PREFIX}menu`);
+          if (savedMenu) setMenuItems(JSON.parse(savedMenu));
+        }
+      } else if (type === 'ORDER_PLACED') {
+        if (payload?.order) {
+          setOrders((prev) => (prev.some((o) => o.id === payload.order.id) ? prev : [payload.order, ...prev]));
+        }
+        if (payload?.tables) {
+          setTables(payload.tables);
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(payload.tables));
+        }
+        const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+        const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
+        if (savedTables) setTables(JSON.parse(savedTables));
+
+        if (soundEnabled) {
+          sounds.playNewOrderChime();
+        }
+      } else if (type === 'ORDER_UPDATED' || type === 'STATUS_UPDATED') {
+        if (payload?.tables) {
+          setTables(payload.tables);
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(payload.tables));
+        }
+        const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+        const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
+        if (savedTables) setTables(JSON.parse(savedTables));
+      } else if (type === 'SYNC_ALL') {
         const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
         if (savedOrders) setOrders(JSON.parse(savedOrders));
         const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
@@ -451,10 +527,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (savedInventory) setInventory(JSON.parse(savedInventory));
         const savedMenu = localStorage.getItem(`${STORAGE_PREFIX}menu`);
         if (savedMenu) setMenuItems(JSON.parse(savedMenu));
-
-        if (type === 'ORDER_PLACED' && soundEnabled) {
-          sounds.playNewOrderChime();
-        }
       }
     };
 
@@ -868,26 +940,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
 
       // 1. Update orders list
-      setOrders((prev) => [newOrder, ...prev]);
+      setOrders((prev) => {
+        const next = [newOrder, ...prev];
+        localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
+        return next;
+      });
 
       // 2. Deplete inventory
       depleteInventoryForOrder(cart);
 
       // 3. If dine-in table specified, mark table as occupied
       if (details.type === 'dine_in' && details.tableNumber) {
-        setTables((prev) =>
-          prev.map((tbl) =>
+        setTables((prev) => {
+          const next = prev.map((tbl) =>
             tbl.number === details.tableNumber
               ? {
                   ...tbl,
-                  status: 'occupied',
+                  status: 'occupied' as TableStatus,
                   activeOrderId: newOrder.id,
                   activeCustomerName: details.customerName,
                   lastOccupiedAt: Date.now(),
                 }
               : tbl
-          )
-        );
+          );
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(next));
+          broadcastStateChange('TABLES_UPDATE', { tables: next });
+          return next;
+        });
       }
 
       // 4. Set as tracked order for customer live tracker
@@ -901,8 +980,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         sounds.playNewOrderChime();
       }
 
-      // 7. Broadcast sync to all other open tabs (KDS, POS, Analytics)
-      broadcastStateChange('ORDER_PLACED', newOrder);
+      // 7. Broadcast sync to all other open tabs (KDS, POS, Customer tabs)
+      broadcastStateChange('ORDER_PLACED', { order: newOrder });
 
       return newOrder;
     },
@@ -912,8 +991,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Update Order Status (KDS / Barista lifecycle)
   const updateOrderStatus = useCallback(
     (orderId: string, status: OrderStatus) => {
-      setOrders((prev) =>
-        prev.map((order) => {
+      setOrders((prev) => {
+        const nextOrders = prev.map((order) => {
           if (order.id !== orderId) return order;
 
           const updated: Order = { ...order, status };
@@ -926,18 +1005,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updated.completedAt = Date.now();
             // Free up table if dine in
             if (order.tableNumber) {
-              setTables((prevTables) =>
-                prevTables.map((tbl) =>
+              setTables((prevTables) => {
+                const nextTables = prevTables.map((tbl) =>
                   tbl.number === order.tableNumber
-                    ? { ...tbl, status: 'cleaning', activeOrderId: undefined, activeCustomerName: undefined }
+                    ? { ...tbl, status: 'cleaning' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
                     : tbl
-                )
-              );
+                );
+                localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
+                broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
+                return nextTables;
+              });
             }
           }
           return updated;
-        })
-      );
+        });
+        localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(nextOrders));
+        return nextOrders;
+      });
+
       broadcastStateChange('ORDER_UPDATED', { orderId, status });
     },
     [soundEnabled, broadcastStateChange]
@@ -946,8 +1031,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Toggle single item strike-through on KDS ticket
   const toggleOrderItemCheck = useCallback(
     (orderId: string, cartId: string) => {
-      setOrders((prev) =>
-        prev.map((order) => {
+      setOrders((prev) => {
+        const next = prev.map((order) => {
           if (order.id !== orderId) return order;
           const current = order.itemStatuses[cartId] ?? false;
           return {
@@ -957,8 +1042,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               [cartId]: !current,
             },
           };
-        })
-      );
+        });
+        localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
+        return next;
+      });
       broadcastStateChange('ORDER_UPDATED', { orderId, cartId });
     },
     [broadcastStateChange]
@@ -969,13 +1056,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) => {
       const target = prev.find((o) => o.id === orderId);
       if (target?.tableNumber) {
-        setTables((prevTables) =>
-          prevTables.map((t) =>
+        setTables((prevTables) => {
+          const nextTables = prevTables.map((t) =>
             t.number === target.tableNumber
-              ? { ...t, status: 'available', activeOrderId: undefined, activeCustomerName: undefined }
+              ? { ...t, status: 'available' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
               : t
-          )
-        );
+          );
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
+          broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
+          return nextTables;
+        });
       }
       const updated = prev.filter((o) => o.id !== orderId);
       localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(updated));
@@ -989,11 +1079,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTrackedOrderId(null);
   }, []);
 
-  // Table Management
+  // Table Management with instant real-time sync across customer & staff views
   const updateTableStatus = useCallback(
     (tableId: string, status: TableStatus, customerName?: string) => {
-      setTables((prev) =>
-        prev.map((tbl) =>
+      setTables((prev) => {
+        const next = prev.map((tbl) =>
           tbl.id === tableId
             ? {
                 ...tbl,
@@ -1002,9 +1092,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 lastOccupiedAt: status === 'occupied' ? Date.now() : tbl.lastOccupiedAt,
               }
             : tbl
-        )
-      );
-      broadcastStateChange('SYNC_ALL');
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(next));
+        broadcastStateChange('TABLES_UPDATE', { tables: next });
+        return next;
+      });
     },
     [broadcastStateChange]
   );
@@ -1033,7 +1125,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         estimatedWaitMinutes: estimatedWait,
       };
 
-      setQueue((prev) => [...prev, newTicket]);
+      setQueue((prev) => {
+        const next = [...prev, newTicket];
+        localStorage.setItem(`${STORAGE_PREFIX}queue`, JSON.stringify(next));
+        return next;
+      });
       broadcastStateChange('SYNC_ALL');
       return newTicket;
     },
@@ -1042,13 +1138,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const callQueueTicket = useCallback(
     (ticketId: string) => {
-      setQueue((prev) =>
-        prev.map((ticket) =>
+      setQueue((prev) => {
+        const next = prev.map((ticket) =>
           ticket.id === ticketId
-            ? { ...ticket, status: 'called', calledAt: Date.now(), estimatedWaitMinutes: 0 }
+            ? { ...ticket, status: 'called' as QueueStatus, calledAt: Date.now(), estimatedWaitMinutes: 0 }
             : ticket
-        )
-      );
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}queue`, JSON.stringify(next));
+        return next;
+      });
       if (soundEnabled) sounds.playQueueBell();
       broadcastStateChange('SYNC_ALL');
     },
@@ -1057,17 +1155,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const seatQueueTicket = useCallback(
     (ticketId: string, tableNumber?: number) => {
-      setQueue((prev) =>
-        prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: 'seated' } : ticket))
-      );
+      setQueue((prev) => {
+        const next = prev.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: 'seated' as QueueStatus } : ticket));
+        localStorage.setItem(`${STORAGE_PREFIX}queue`, JSON.stringify(next));
+        return next;
+      });
       if (tableNumber) {
-        setTables((prev) =>
-          prev.map((tbl) =>
+        setTables((prev) => {
+          const next = prev.map((tbl) =>
             tbl.number === tableNumber
-              ? { ...tbl, status: 'occupied', lastOccupiedAt: Date.now() }
+              ? { ...tbl, status: 'occupied' as TableStatus, lastOccupiedAt: Date.now() }
               : tbl
-          )
-        );
+          );
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(next));
+          broadcastStateChange('TABLES_UPDATE', { tables: next });
+          return next;
+        });
       }
       broadcastStateChange('SYNC_ALL');
     },

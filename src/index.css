@@ -84,3 +84,62 @@
     display: block !important;
   }
 }
+
+/* Sticky Note Styles & Micro-textures */
+.sticky-shadow {
+  box-shadow: 
+    0 1px 1px rgba(0, 0, 0, 0.08), 
+    0 4px 12px rgba(0, 0, 0, 0.08), 
+    0 16px 24px -8px rgba(0, 0, 0, 0.12);
+}
+
+.sticky-shadow-hover:hover {
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.08), 
+    0 8px 24px rgba(0, 0, 0, 0.12), 
+    0 24px 36px -10px rgba(0, 0, 0, 0.18);
+}
+
+.washi-tape {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(4px);
+  border-left: 2px dashed rgba(0, 0, 0, 0.15);
+  border-right: 2px dashed rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .washi-tape {
+  background: rgba(255, 255, 255, 0.18);
+  border-left: 2px dashed rgba(255, 255, 255, 0.2);
+  border-right: 2px dashed rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.highlighter-yellow {
+  background: linear-gradient(104deg, rgba(254, 240, 138, 0.7) 0.9%, rgba(253, 224, 71, 0.6) 100%);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.dark .highlighter-yellow {
+  background: linear-gradient(104deg, rgba(234, 179, 8, 0.3) 0.9%, rgba(202, 138, 4, 0.3) 100%);
+  color: #fef08a;
+}
+
+.corkboard-pattern {
+  background-color: #f6f2ec;
+  background-image: 
+    radial-gradient(#e5ddd2 1px, transparent 1px), 
+    radial-gradient(#dfd4c5 1px, #f6f2ec 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.dark .corkboard-pattern {
+  background-color: #0d0d10;
+  background-image: 
+    radial-gradient(#1e1e24 1px, transparent 1px), 
+    radial-gradient(#1a1a20 1px, #0d0d10 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}

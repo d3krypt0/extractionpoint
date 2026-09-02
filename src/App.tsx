@@ -73,6 +73,7 @@ const MainLayout: React.FC = () => {
           <>
             {activeView === 'kitchen' && <KitchenDashboard />}
             {activeView === 'pos' && <PosDashboard />}
+            {activeView === 'tables' && <TableAvailabilityMap isPageInline={true} />}
             {activeView === 'inventory' && <InventoryDashboard />}
             {activeView === 'analytics' && <AnalyticsDashboard />}
             {activeView === 'tracker' && <LiveOrderTracker />}

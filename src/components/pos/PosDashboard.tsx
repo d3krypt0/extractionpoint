@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MENU_CATEGORIES } from '../../data/menuData';
-import { Category, OrderType } from '../../types';
+import { Category, MainCategoryGroup, OrderType } from '../../types';
 import { formatPhp, calculatePhilippineTaxesAndDiscounts } from '../../utils/phCurrency';
 import { GCashPaymentModal } from '../customer/GCashPaymentModal';
 import { 
@@ -29,6 +29,7 @@ export const PosDashboard: React.FC = () => {
     orders,
   } = useApp();
 
+  const [activeGroup, setActiveGroup] = useState<MainCategoryGroup>('all');
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [orderType, setOrderType] = useState<OrderType>('dine_in');
@@ -48,9 +49,16 @@ export const PosDashboard: React.FC = () => {
   const calculation = calculatePhilippineTaxesAndDiscounts(cartTotals.subtotal, discountType);
   const changeDue = Math.max(0, cashTendered - calculation.totalPayable);
 
+  // Filtered categories based on selected group
+  const filteredCategories = useMemo(() => {
+    if (activeGroup === 'all') return MENU_CATEGORIES;
+    return MENU_CATEGORIES.filter((c) => c.group === activeGroup || c.id === 'all');
+  }, [activeGroup]);
+
   // Filtered Menu Items
   const filteredItems = useMemo(() => {
     return menuItems.filter((item) => {
+      if (activeGroup !== 'all' && item.group !== activeGroup) return false;
       if (activeCategory !== 'all' && item.category !== activeCategory) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -58,7 +66,7 @@ export const PosDashboard: React.FC = () => {
       }
       return true;
     });
-  }, [menuItems, activeCategory, searchQuery]);
+  }, [menuItems, activeGroup, activeCategory, searchQuery]);
 
   const handleCashTenderPreset = (amount: number) => {
     setCashTendered(amount);
@@ -158,22 +166,55 @@ export const PosDashboard: React.FC = () => {
               />
             </div>
 
-            {/* Quick Category Buttons */}
-            <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
-              {MENU_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategory(cat.id as Category)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                    activeCategory === cat.id
-                      ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black'
-                      : 'bg-[#ede7dc] dark:bg-[#1e1e24] text-gray-600 dark:text-gray-400 hover:bg-[#c5a880] hover:text-black'
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+            {/* Main Category Group Tabs */}
+            <div className="flex items-center space-x-1 p-1 bg-[#ede7dc]/80 dark:bg-[#18181c] rounded-xl border border-[#ded8cf] dark:border-[#26262b] overflow-x-auto no-scrollbar text-xs font-bold">
+              {[
+                { id: 'all', label: 'All Menu' },
+                { id: 'food', label: '🍝 Food' },
+                { id: 'coffee', label: '☕ Coffee' },
+                { id: 'matcha', label: '🍵 Matcha' },
+                { id: 'non_coffee', label: '✨ Non-Coffee' },
+              ].map((grp) => {
+                const isActive = activeGroup === grp.id;
+                return (
+                  <button
+                    key={grp.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveGroup(grp.id as MainCategoryGroup);
+                      setActiveCategory('all');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
+                      isActive
+                        ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-xs font-black'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {grp.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sub-Category Pills with Full Flex-Wrap (Zero Hidden/Clipped Pills) */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              {filteredCategories.map((cat) => {
+                const isActive = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveCategory(cat.id as Category)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                      isActive
+                        ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black border-transparent shadow-xs'
+                        : 'bg-[#f5f1ea] dark:bg-[#1e1e24] text-gray-700 dark:text-gray-300 border-[#ded8ce] dark:border-[#2a2a30] hover:bg-[#c5a880] hover:text-black hover:border-[#c5a880]'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

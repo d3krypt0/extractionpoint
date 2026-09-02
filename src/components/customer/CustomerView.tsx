@@ -139,6 +139,7 @@ export const CustomerView: React.FC = () => {
     addToCart, 
     cartTotals, 
     tables, 
+    orders,
     queue, 
     trackedOrderId, 
     setActiveView,
@@ -159,6 +160,18 @@ export const CustomerView: React.FC = () => {
   // Stats
   const availableTables = tables.filter((t) => t.status === 'available').length;
   const waitingParties = queue.filter((q) => q.status === 'waiting').length;
+
+  const isOrderTrackableForCurrentView = useMemo(() => {
+    if (qrTableNumber) {
+      // If at table QR, only show if there is an active in-progress order for THIS table
+      return orders.some((o) => o.tableNumber === qrTableNumber && o.status !== 'completed' && o.status !== 'served');
+    }
+    if (trackedOrderId) {
+      const order = orders.find((o) => o.id === trackedOrderId);
+      return Boolean(order && order.status !== 'completed' && order.status !== 'served');
+    }
+    return false;
+  }, [orders, trackedOrderId, qrTableNumber]);
 
   // Filtered Menu Items
   const filteredItems = useMemo(() => {
@@ -244,7 +257,7 @@ export const CustomerView: React.FC = () => {
               <span>Queue: <strong className="text-[#c5a880] font-mono">{waitingParties} waiting</strong></span>
             </button>
 
-            {trackedOrderId && (
+            {isOrderTrackableForCurrentView && (
               <button
                 onClick={() => setActiveView('tracker')}
                 className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black text-xs font-bold transition-all shadow-md animate-pulse"
@@ -341,7 +354,6 @@ export const CustomerView: React.FC = () => {
               <div>
                 <div className="font-sans font-black text-base sm:text-lg tracking-wide uppercase text-white flex items-center space-x-2">
                   <span>Dine-In • Seated at Table #{qrTableNumber}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">DINE-IN</span>
                 </div>
                 <p className="text-xs text-gray-300 font-sans mt-0.5">
                   Your ordered coffee, drinks, and food will be served directly to <strong>Table #{qrTableNumber}</strong>.

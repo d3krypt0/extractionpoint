@@ -15,12 +15,12 @@ import {
   VolumeX, 
   Wifi, 
   WifiOff, 
-  MapPin, 
   QrCode, 
   Users,
   Unlock,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  LayoutGrid
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { TableQrStandModal } from '../customer/TableQrStandModal';
@@ -47,9 +47,10 @@ export const Header: React.FC<HeaderProps> = ({
     cartTotals,
     activeOrders,
     orders,
+    tables,
     trackedOrderId,
-    queue,
     qrTableNumber,
+    queue,
     lockStaffMode,
     isAdminRoute,
     navigateTo,
@@ -58,13 +59,19 @@ export const Header: React.FC<HeaderProps> = ({
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const waitingQueueCount = queue.filter((q) => q.status === 'waiting').length;
-  const activeTrackedOrder = orders.find((o) => o.id === trackedOrderId);
-  const isTrackerBadgeActive = activeTrackedOrder && activeTrackedOrder.status !== 'completed' && activeTrackedOrder.status !== 'served';
+  const activeTrackedOrder = qrTableNumber 
+    ? orders.find((o) => o.tableNumber === qrTableNumber && o.status !== 'completed' && o.status !== 'served')
+    : trackedOrderId 
+    ? orders.find((o) => o.id === trackedOrderId && !o.tableNumber && o.status !== 'completed' && o.status !== 'served')
+    : null;
+  const isTrackerBadgeActive = Boolean(activeTrackedOrder);
+  const occupiedTablesCount = tables.filter((t) => t.status === 'occupied').length;
 
   // Admin Console Navigation (POS as default / first tab)
   const adminNavItems: { id: ActiveView; fullLabel: string; shortLabel: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'pos', fullLabel: 'Counter POS', shortLabel: 'POS', icon: <Store className="w-3.5 h-3.5" /> },
     { id: 'kitchen', fullLabel: 'Kitchen KDS', shortLabel: 'KDS', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, badge: activeOrders.length },
+    { id: 'tables', fullLabel: 'Table Floor Plan', shortLabel: 'Tables', icon: <LayoutGrid className="w-3.5 h-3.5" />, badge: occupiedTablesCount > 0 ? occupiedTablesCount : undefined },
     { id: 'inventory', fullLabel: 'Inventory & Stocks', shortLabel: 'Stocks', icon: <Package className="w-3.5 h-3.5" /> },
     { id: 'analytics', fullLabel: 'Sales & Z-Report', shortLabel: 'Z-Report', icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { id: 'tracker', fullLabel: 'Order Tracker', shortLabel: 'Tracker', icon: <Clock className="w-3.5 h-3.5" />, badge: isTrackerBadgeActive ? 1 : 0 },
@@ -139,18 +146,8 @@ export const Header: React.FC<HeaderProps> = ({
                     );
                   })}
                 </nav>
-              ) : qrTableNumber ? (
-                /* CUSTOMER QR MODE: Prominent High-Legibility Table Badge (ONLY if scanned from a QR table) */
-                <div className="flex items-center space-x-2 bg-[#111111] dark:bg-black text-white px-3.5 sm:px-4 py-1.5 rounded-full border-2 border-[#c5a880] shadow-md flex-shrink-0 animate-fadeIn">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <MapPin className="w-4 h-4 text-[#c5a880] flex-shrink-0" />
-                  <span className="font-sans font-black text-xs sm:text-sm tracking-wide uppercase text-white whitespace-nowrap">
-                    TABLE <span className="text-[#c5a880] font-mono text-sm sm:text-base font-black px-1.5 py-0.5 rounded bg-white/10 ml-0.5">{qrTableNumber}</span>
-                    <span className="hidden xs:inline ml-1.5 text-[10.5px] font-bold text-gray-300 font-sans tracking-normal">(DINE-IN)</span>
-                  </span>
-                </div>
               ) : (
-                /* DEFAULT CUSTOMER VIEW: Clean Online Storefront Navigation */
+                /* CUSTOMER VIEW: Clean Storefront Navigation */
                 <nav className="hidden sm:flex items-center space-x-1 bg-[#ede8e1]/70 dark:bg-[#18181c]/90 p-1 rounded-2xl border border-[#ded8cf] dark:border-[#2a2a30]">
                   {customerNavItems.map((item) => {
                     const isActive = activeView === item.id;

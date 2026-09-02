@@ -201,4 +201,4 @@ export interface ZReadingReport {
   closedBy: string;
 }
 
-export type ActiveView = 'customer' | 'kitchen' | 'pos' | 'inventory' | 'analytics' | 'tracker';
+export type ActiveView = 'customer' | 'kitchen' | 'pos' | 'inventory' | 'analytics' | 'tracker' | 'tables';

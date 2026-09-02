@@ -14,14 +14,16 @@ import {
 interface TableQrStandModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTableNumber?: number;
 }
 
 export const TableQrStandModal: React.FC<TableQrStandModalProps> = ({
   isOpen,
   onClose,
+  initialTableNumber = 1,
 }) => {
   const { tables } = useApp();
-  const [selectedTableNum, setSelectedTableNum] = useState<number>(1);
+  const [selectedTableNum, setSelectedTableNum] = useState<number>(initialTableNumber);
   const [copiedLink, setCopiedLink] = useState(false);
 
   if (!isOpen) return null;

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { KitchenStation } from '../../types';
 import { OrderTicketCard } from './OrderTicketCard';
 import { 
   Volume2, 
@@ -18,37 +17,16 @@ export const KitchenDashboard: React.FC = () => {
     updateOrderStatus, 
     toggleOrderItemCheck,
     deleteOrder,
-    kdsStationFilter,
-    setKdsStationFilter,
     soundEnabled,
     toggleSound,
   } = useApp();
 
   const [showHistory, setShowHistory] = useState(false);
 
-  // Filter orders by station
-  const stationFilteredOrders = useMemo(() => {
-    const list = showHistory ? completedOrders.slice(0, 10) : activeOrders;
-
-    if (kdsStationFilter === 'all') return list;
-
-    return list.filter((order) => {
-      return (order.items || []).some((item) => {
-        const group = item?.menuItem?.group || 'coffee';
-
-        if (kdsStationFilter === 'barista') {
-          return group === 'coffee';
-        }
-        if (kdsStationFilter === 'cold_bar') {
-          return group === 'matcha' || group === 'non_coffee';
-        }
-        if (kdsStationFilter === 'kitchen') {
-          return group === 'food';
-        }
-        return true;
-      });
-    });
-  }, [showHistory, completedOrders, activeOrders, kdsStationFilter]);
+  // Centralized orders stream
+  const displayedOrders = useMemo(() => {
+    return showHistory ? completedOrders.slice(0, 12) : activeOrders;
+  }, [showHistory, completedOrders, activeOrders]);
 
   // Metrics
   const placedCount = activeOrders.filter((o) => o.status === 'placed').length;
@@ -62,50 +40,23 @@ export const KitchenDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f3efe8] dark:bg-[#0c0c0e] p-4 sm:p-6 space-y-6 transition-colors">
       
-      {/* Top Bar: Station Selector & KDS Metrics */}
+      {/* Top Bar: Centralized Header & KDS Metrics */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#222226] shadow-sm">
         
-        {/* Title & Station Tabs */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black">
-              <ChefHat className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-serif font-bold text-lg text-[#111111] dark:text-[#f8f7f4]">
-                Kitchen & Barista Display (KDS)
-              </h2>
-              <p className="text-[11px] text-gray-500">Live Ticket Order Routing</p>
-            </div>
+        {/* Title */}
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm">
+            <ChefHat className="w-5 h-5" />
           </div>
-
-          {/* Station Filters */}
-          <div className="flex items-center space-x-1 bg-[#ede7dc] dark:bg-[#1f1f24] p-1 rounded-xl">
-            {[
-              { id: 'all', label: 'All Stations' },
-              { id: 'barista', label: '☕ Barista Bar' },
-              { id: 'cold_bar', label: '🍵 Matcha / Cold' },
-              { id: 'kitchen', label: '🍳 Hot Kitchen' },
-            ].map((st) => (
-              <button
-                key={st.id}
-                onClick={() => {
-                  setKdsStationFilter(st.id as KitchenStation);
-                  setShowHistory(false);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  kdsStationFilter === st.id && !showHistory
-                    ? 'bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-black shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                }`}
-              >
-                {st.label}
-              </button>
-            ))}
+          <div>
+            <h2 className="font-serif font-bold text-lg text-[#111111] dark:text-[#f8f7f4]">
+              Centralized Order Ticketing (KDS)
+            </h2>
+            <p className="text-[11px] text-gray-500">Live unified kitchen & barista order stream</p>
           </div>
         </div>
 
-        {/* Live Counters & Audio Toggle */}
+        {/* Live Counters & Controls */}
         <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto no-scrollbar">
           
           <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-400 text-xs font-medium flex items-center space-x-1.5">
@@ -155,7 +106,7 @@ export const KitchenDashboard: React.FC = () => {
       </div>
 
       {/* Tickets Stream Grid */}
-      {stationFilteredOrders.length === 0 ? (
+      {displayedOrders.length === 0 ? (
         <div className="p-16 text-center rounded-3xl bg-white dark:bg-[#141417] border border-[#ded8ce] dark:border-[#222226] space-y-3">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
           <h3 className="font-serif text-xl font-bold text-gray-800 dark:text-gray-200">
@@ -169,7 +120,7 @@ export const KitchenDashboard: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {stationFilteredOrders.map((order) => (
+          {displayedOrders.map((order) => (
             <OrderTicketCard
               key={order.id}
               order={order}
