@@ -128,6 +128,8 @@ interface AppContextType {
   exitCustomerQrMode: () => void;
 
   // Staff PIN Security & Terminal Lock
+  staffPin: string;
+  updateStaffPin: (currentPin: string, newPin: string) => { success: boolean; error?: string };
   isStaffAuthenticated: boolean;
   isStaffPinModalOpen: boolean;
   setIsStaffPinModalOpen: (open: boolean) => void;
@@ -192,6 +194,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [isStaffPinModalOpen, setIsStaffPinModalOpen] = useState<boolean>(false);
   const [pendingStaffView, setPendingStaffView] = useState<ActiveView>('pos');
+  const [staffPin, setStaffPin] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(`${STORAGE_PREFIX}staff_pin`) || '1234';
+    }
+    return '1234';
+  });
 
   // Theme & App Navigation (Default: Light Theme & POS as first admin tab)
   const [activeView, setActiveView] = useState<ActiveView>(() => {
@@ -466,6 +474,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed)) setInventory(parsed);
         } catch {}
+      } else if (e.key === `${STORAGE_PREFIX}staff_pin` && e.newValue) {
+        setStaffPin(e.newValue);
       }
     };
 
@@ -522,6 +532,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (savedOrders) setOrders(JSON.parse(savedOrders));
         const savedTables = localStorage.getItem(`${STORAGE_PREFIX}tables`);
         if (savedTables) setTables(JSON.parse(savedTables));
+      } else if (type === 'PIN_UPDATED' && payload?.pin) {
+        setStaffPin(payload.pin);
+        localStorage.setItem(`${STORAGE_PREFIX}staff_pin`, payload.pin);
       } else if (type === 'SYNC_ALL') {
         const savedOrders = localStorage.getItem(`${STORAGE_PREFIX}orders`);
         if (savedOrders) setOrders(JSON.parse(savedOrders));
@@ -742,9 +755,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [isStaffAuthenticated]);
 
-  // Staff PIN Authentication (Default: 1234)
+  // Staff PIN Authentication & Management
   const authenticateStaff = useCallback((pin: string): boolean => {
-    if (pin === '1234') {
+    if (pin === staffPin) {
       setIsStaffAuthenticated(true);
       setIsStaffPinModalOpen(false);
       setIsQrCustomerMode(false);
@@ -754,11 +767,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
         sessionStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
       }
-      setActiveView(pendingStaffView || 'kitchen');
+      setActiveView(pendingStaffView || 'pos');
       return true;
     }
     return false;
-  }, [pendingStaffView]);
+  }, [pendingStaffView, staffPin]);
+
+  const updateStaffPin = useCallback((currentPin: string, newPin: string): { success: boolean; error?: string } => {
+    if (currentPin !== staffPin) {
+      return { success: false, error: 'Current PIN is incorrect.' };
+    }
+    if (!/^\d{4}$/.test(newPin)) {
+      return { success: false, error: 'New PIN must be exactly 4 digits (0-9).' };
+    }
+    setStaffPin(newPin);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_PREFIX}staff_pin`, newPin);
+    }
+    broadcastStateChange('PIN_UPDATED', { pin: newPin });
+    return { success: true };
+  }, [staffPin, broadcastStateChange]);
 
   const lockStaffMode = useCallback(() => {
     setIsStaffAuthenticated(false);
@@ -1460,7 +1488,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         enterCustomerQrMode,
         exitCustomerQrMode,
 
-        // Staff PIN & Terminal Protection
+        // Staff Mode & Security
+        staffPin,
+        updateStaffPin,
         isStaffAuthenticated,
         isStaffPinModalOpen,
         setIsStaffPinModalOpen,

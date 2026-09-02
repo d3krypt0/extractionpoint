@@ -21,10 +21,12 @@ import {
   LayoutGrid,
   Menu as MenuIcon,
   X,
-  ChevronRight
+  ChevronRight,
+  KeyRound
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { TableQrStandModal } from '../customer/TableQrStandModal';
+import { ChangePinModal } from '../admin/ChangePinModal';
 
 interface AdminSidebarProps {
   onOpenQrModal?: () => void;
@@ -50,6 +52,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onOpenQrModal }) => 
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isChangePinModalOpen, setIsChangePinModalOpen] = useState(false);
 
   const activeTrackedOrder = qrTableNumber 
     ? orders.find((o) => o.tableNumber === qrTableNumber && o.status !== 'completed' && o.status !== 'served')
@@ -365,10 +368,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onOpenQrModal }) => 
           </div>
         </div>
 
+        {/* Change Admin PIN Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setIsChangePinModalOpen(true);
+            setIsMobileOpen(false);
+          }}
+          className="w-full py-2 px-3 rounded-xl border border-[#ded8ce] dark:border-[#2a2a32] bg-white/70 dark:bg-[#18181d] hover:bg-[#c5a880]/15 hover:border-[#c5a880]/50 text-gray-700 dark:text-gray-300 font-bold text-xs flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer"
+        >
+          <KeyRound className="w-3.5 h-3.5 text-[#c5a880]" />
+          <span>Change Admin PIN</span>
+        </button>
+
         {/* Lock Console Button */}
         <button
+          type="button"
           onClick={lockStaffMode}
-          className="w-full py-2 px-3 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold text-xs flex items-center justify-center space-x-2 transition-all active:scale-98"
+          className="w-full py-2 px-3 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 font-bold text-xs flex items-center justify-center space-x-2 transition-all active:scale-98 cursor-pointer"
         >
           <Unlock className="w-3.5 h-3.5 text-amber-500" />
           <span>Lock Admin Console</span>
@@ -435,6 +452,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ onOpenQrModal }) => 
       <TableQrStandModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
+      />
+
+      {/* Change Admin PIN Modal */}
+      <ChangePinModal
+        isOpen={isChangePinModalOpen}
+        onClose={() => setIsChangePinModalOpen(false)}
       />
     </>
   );

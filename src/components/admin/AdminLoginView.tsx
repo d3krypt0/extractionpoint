@@ -4,7 +4,7 @@ import { Lock, ShieldAlert, ArrowLeft, Delete } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
 
 export const AdminLoginView: React.FC = () => {
-  const { authenticateStaff, navigateTo } = useApp();
+  const { authenticateStaff, navigateTo, staffPin } = useApp();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
@@ -59,51 +59,54 @@ export const AdminLoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0c0e] flex flex-col items-center justify-center p-4 text-white select-none">
-      
-      {/* Background ambient lighting */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#c5a880]/10 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-[#0e0e11] text-[#f8f7f4] flex flex-col items-center justify-center p-4 relative overflow-hidden select-none">
+      {/* Background Ambient Glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#c5a880]/10 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Return to Customer Storefront */}
+      <div className="absolute top-6 left-6">
+        <button
+          onClick={() => navigateTo('/')}
+          className="flex items-center space-x-2 text-xs text-gray-400 hover:text-white px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-[#c5a880]/50 transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Customer Menu</span>
+        </button>
       </div>
 
-      <div className="relative w-full max-w-md space-y-6">
+      <div className="w-full max-w-sm space-y-6 relative z-10">
         
-        {/* Top Brand */}
-        <div className="flex flex-col items-center text-center space-y-2">
-          <BrandLogo variant="stacked" size="md" showTagline={false} />
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-[#c5a880]">
-            <Lock className="w-3.5 h-3.5" />
-            <span>Staff & Management Portal</span>
+        {/* Brand Header */}
+        <div className="text-center space-y-3">
+          <div className="flex justify-center">
+            <BrandLogo variant="horizontal" size="md" showTagline={false} />
+          </div>
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#c5a880]/15 text-[#dfcca9] text-xs font-mono font-bold tracking-wider border border-[#c5a880]/30">
+            <Lock className="w-3.5 h-3.5 text-[#c5a880]" />
+            <span>Staff Terminal Authentication</span>
           </div>
         </div>
 
-        {/* Login Card */}
-        <div 
-          className={`p-6 sm:p-8 rounded-3xl bg-[#141417] border border-[#26262b] shadow-2xl space-y-6 ${
-            shake ? 'animate-shake' : ''
-          }`}
-        >
-          <div className="text-center space-y-1">
-            <h2 className="font-serif text-xl font-bold text-white">
-              Enter Staff Terminal PIN
-            </h2>
-            <p className="text-xs text-gray-400">
-              Access Kitchen KDS, Counter POS, Inventory & Z-Report
-            </p>
-          </div>
-
-          {/* PIN Indicators */}
-          <div className="space-y-2 text-center py-1">
-            <div className="flex justify-center items-center space-x-4">
-              {[0, 1, 2, 3].map((idx) => {
-                const filled = idx < pin.length;
+        {/* PIN Input & Visualizer Box */}
+        <div className="p-6 rounded-3xl bg-[#141417] border border-[#222228] shadow-2xl space-y-5">
+          <div className="text-center space-y-2">
+            <h3 className="font-serif text-base font-bold text-white">
+              Enter 4-Digit Staff PIN
+            </h3>
+            
+            {/* PIN Indicator Dots */}
+            <div className={`flex items-center justify-center space-x-3.5 py-3 ${shake ? 'animate-shake' : ''}`}>
+              {[0, 1, 2, 3].map((i) => {
+                const filled = i < pin.length;
                 return (
                   <div
-                    key={idx}
+                    key={i}
                     className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                      filled
-                        ? 'bg-[#c5a880] scale-125 shadow-md shadow-[#c5a880]/50'
-                        : 'border-2 border-gray-600 bg-transparent'
+                      error
+                        ? 'bg-rose-500 border-rose-500 scale-110 shadow-rose-500/50 shadow-md'
+                        : filled
+                        ? 'bg-[#c5a880] border-[#c5a880] scale-110 shadow-[#c5a880]/40 shadow-sm'
+                        : 'bg-zinc-800 border border-zinc-700'
                     }`}
                   />
                 );
@@ -117,7 +120,7 @@ export const AdminLoginView: React.FC = () => {
               </p>
             ) : (
               <p className="text-[11px] text-gray-500 pt-2 font-mono">
-                Default Staff PIN: <strong>1234</strong>
+                {staffPin === '1234' ? 'Default Staff PIN: 1234' : 'Authorized Staff PIN Required'}
               </p>
             )}
           </div>

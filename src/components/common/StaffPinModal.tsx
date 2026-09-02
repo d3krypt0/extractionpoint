@@ -6,7 +6,8 @@ export const StaffPinModal: React.FC = () => {
   const { 
     isStaffPinModalOpen, 
     setIsStaffPinModalOpen, 
-    authenticateStaff 
+    authenticateStaff,
+    staffPin
   } = useApp();
 
   const [pin, setPin] = useState('');
@@ -179,7 +180,7 @@ export const StaffPinModal: React.FC = () => {
         <div className="text-center pt-2 space-y-2 border-t border-[#222228]">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/5 text-[10px] text-gray-400 font-mono">
             <CheckCircle2 className="w-3 h-3 text-[#c5a880]" />
-            <span>Default Staff PIN: <strong>1234</strong></span>
+            <span>{staffPin === '1234' ? 'Default Staff PIN: 1234' : 'Authorized Staff PIN Required'}</span>
           </div>
 
           <div>

@@ -119,6 +119,26 @@ class SoundManager {
       osc.stop(now + 1.2);
     } catch {}
   }
+
+  // Error rejection buzz
+  playErrorChime() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now); // Low A3 buzz
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch {}
+  }
 }
 
 export const sounds = new SoundManager();
