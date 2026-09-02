@@ -203,15 +203,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'customer';
   });
 
-  const SCHEMA_RESET_VERSION = 'v8_light_pos_full_sync';
+  const SCHEMA_RESET_VERSION = 'v10_production_clean_slate';
 
-  // Execute clean cache sync on startup to ensure iPad Safari & Chrome load fresh official PDF menu & light theme
+  // Execute clean cache sync on startup to clear all old test orders, queue tickets, cart items, and test table locks
   if (typeof window !== 'undefined') {
     const currentVersion = localStorage.getItem(`${STORAGE_PREFIX}schema_version`);
     if (currentVersion !== SCHEMA_RESET_VERSION) {
       localStorage.setItem(`${STORAGE_PREFIX}schema_version`, SCHEMA_RESET_VERSION);
       localStorage.setItem(`${STORAGE_PREFIX}menu_version`, SCHEMA_RESET_VERSION);
       localStorage.setItem(`${STORAGE_PREFIX}menu`, JSON.stringify(MENU_ITEMS));
+      localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify([]));
+      localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(INITIAL_TABLES));
+      localStorage.setItem(`${STORAGE_PREFIX}queue`, JSON.stringify([]));
+      localStorage.setItem(`${STORAGE_PREFIX}cart`, JSON.stringify([]));
+      localStorage.setItem(`${STORAGE_PREFIX}waste`, JSON.stringify([]));
+      localStorage.removeItem(`${STORAGE_PREFIX}trackedOrderId`);
       localStorage.removeItem(`${STORAGE_PREFIX}customer_table_num`);
       localStorage.removeItem(`${STORAGE_PREFIX}is_customer_device`);
       localStorage.setItem(`${STORAGE_PREFIX}theme`, 'light');
