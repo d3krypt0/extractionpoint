@@ -997,7 +997,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Update Order Status (KDS / Barista lifecycle)
   const updateOrderStatus = useCallback(
     (orderId: string, status: OrderStatus) => {
+      let updatedTableNumber: number | undefined;
+
       setOrders((prev) => {
+        const targetOrder = prev.find((o) => o.id === orderId);
+        if (!targetOrder) return prev;
+
+        if ((status === 'served' || status === 'completed') && targetOrder.tableNumber) {
+          updatedTableNumber = targetOrder.tableNumber;
+        }
+
         const nextOrders = prev.map((order) => {
           if (order.id !== orderId) return order;
 
@@ -1009,27 +1018,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (soundEnabled) sounds.playOrderReadyChime();
           } else if (status === 'served' || status === 'completed') {
             updated.completedAt = Date.now();
-            // Free up table if dine in
-            if (order.tableNumber) {
-              setTables((prevTables) => {
-                const nextTables = prevTables.map((tbl) =>
-                  tbl.number === order.tableNumber
-                    ? { ...tbl, status: 'cleaning' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
-                    : tbl
-                );
-                localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
-                broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
-                return nextTables;
-              });
-            }
           }
           return updated;
         });
+
         localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(nextOrders));
         return nextOrders;
       });
 
-      broadcastStateChange('ORDER_UPDATED', { orderId, status });
+      // If dine-in order is served/completed, free up table outside reducer
+      if (updatedTableNumber) {
+        const tblNum = updatedTableNumber;
+        setTables((prevTables) => {
+          const nextTables = prevTables.map((tbl) =>
+            tbl.number === tblNum
+              ? { ...tbl, status: 'cleaning' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
+              : tbl
+          );
+          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
+          broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
+          return nextTables;
+        });
+      }
+
+      broadcastStateChange('STATUS_UPDATED', { orderId, status });
     },
     [soundEnabled, broadcastStateChange]
   );
@@ -1040,11 +1052,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setOrders((prev) => {
         const next = prev.map((order) => {
           if (order.id !== orderId) return order;
-          const current = order.itemStatuses[cartId] ?? false;
+          const current = order.itemStatuses ? Boolean(order.itemStatuses[cartId]) : false;
           return {
             ...order,
             itemStatuses: {
-              ...order.itemStatuses,
+              ...(order.itemStatuses || {}),
               [cartId]: !current,
             },
           };
@@ -1052,31 +1064,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(next));
         return next;
       });
-      broadcastStateChange('ORDER_UPDATED', { orderId, cartId });
+      broadcastStateChange('ITEM_CHECK_TOGGLED', { orderId, cartId });
     },
     [broadcastStateChange]
   );
 
   // Delete / Dismiss Stuck Order (Barista bypass)
   const deleteOrder = useCallback((orderId: string) => {
+    let freedTableNum: number | undefined;
+
     setOrders((prev) => {
       const target = prev.find((o) => o.id === orderId);
       if (target?.tableNumber) {
-        setTables((prevTables) => {
-          const nextTables = prevTables.map((t) =>
-            t.number === target.tableNumber
-              ? { ...t, status: 'available' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
-              : t
-          );
-          localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
-          broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
-          return nextTables;
-        });
+        freedTableNum = target.tableNumber;
       }
       const updated = prev.filter((o) => o.id !== orderId);
       localStorage.setItem(`${STORAGE_PREFIX}orders`, JSON.stringify(updated));
       return updated;
     });
+
+    if (freedTableNum) {
+      const tblNum = freedTableNum;
+      setTables((prevTables) => {
+        const nextTables = prevTables.map((t) =>
+          t.number === tblNum
+            ? { ...t, status: 'available' as TableStatus, activeOrderId: undefined, activeCustomerName: undefined }
+            : t
+        );
+        localStorage.setItem(`${STORAGE_PREFIX}tables`, JSON.stringify(nextTables));
+        broadcastStateChange('TABLES_UPDATE', { tables: nextTables });
+        return nextTables;
+      });
+    }
+
     setTrackedOrderId((current) => (current === orderId ? null : current));
     broadcastStateChange('SYNC_ALL');
   }, [broadcastStateChange]);

@@ -132,7 +132,11 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
           return (
             <div
               key={item.cartId}
-              onClick={() => onToggleItemCheck(order.id, item.cartId)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleItemCheck(order.id, item.cartId);
+              }}
               className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none flex items-start space-x-2.5 ${
                 isDone
                   ? 'bg-gray-100/70 dark:bg-zinc-900/60 border-gray-200 dark:border-gray-800 opacity-60'
@@ -203,8 +207,13 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
       <div className="p-3 sm:p-4 border-t border-gray-100 dark:border-gray-800 bg-[#f5f1ea] dark:bg-[#16161a] flex items-center justify-between gap-2">
         {order.status === 'placed' && (
           <button
-            onClick={() => onUpdateStatus(order.id, 'in_prep')}
-            className="w-full py-2.5 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] font-bold text-xs flex items-center justify-center space-x-1.5 hover:opacity-90 active:scale-98 transition-all"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUpdateStatus(order.id, 'in_prep');
+            }}
+            className="w-full py-2.5 rounded-xl bg-[#111111] dark:bg-[#f8f7f4] text-white dark:text-[#111111] font-bold text-xs flex items-center justify-center space-x-1.5 hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-sm select-none"
           >
             <span>Start Brewing / Prep</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -213,8 +222,13 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
 
         {order.status === 'in_prep' && (
           <button
-            onClick={() => onUpdateStatus(order.id, 'ready')}
-            className="w-full py-2.5 rounded-xl bg-[#c5a880] text-black font-black text-xs flex items-center justify-center space-x-1.5 hover:bg-[#d5baa0] active:scale-98 transition-all shadow-md"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUpdateStatus(order.id, 'ready');
+            }}
+            className="w-full py-2.5 rounded-xl bg-[#c5a880] hover:bg-[#b89a70] text-black font-black text-xs flex items-center justify-center space-x-1.5 active:scale-95 transition-all shadow-md cursor-pointer select-none"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Mark Ready for Serving</span>
@@ -223,8 +237,13 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
 
         {order.status === 'ready' && (
           <button
-            onClick={() => onUpdateStatus(order.id, 'served')}
-            className="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center space-x-1.5 hover:bg-emerald-700 active:scale-98 transition-all shadow-md"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUpdateStatus(order.id, 'served');
+            }}
+            className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center space-x-1.5 active:scale-95 transition-all shadow-md cursor-pointer select-none"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Bump & Complete Order</span>
@@ -233,8 +252,13 @@ export const OrderTicketCard: React.FC<OrderTicketCardProps> = ({
 
         {(order.status === 'served' || order.status === 'completed') && (
           <button
-            onClick={() => onUpdateStatus(order.id, 'in_prep')}
-            className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold flex items-center justify-center space-x-1 hover:bg-gray-100 dark:hover:bg-gray-800"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onUpdateStatus(order.id, 'in_prep');
+            }}
+            className="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold flex items-center justify-center space-x-1 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer active:scale-95 transition-all select-none"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Recall Order Ticket</span>
