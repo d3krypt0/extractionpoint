@@ -96,24 +96,67 @@ export const AnalyticsDashboard: React.FC = () => {
     }));
   }, [orders]);
 
-  // Hourly Peak Simulation (7 AM to 10 PM)
-  const hourlyPeakData = [
-    { hour: '7 AM', sales: 450, orders: 3 },
-    { hour: '8 AM', sales: 1250, orders: 8 },
-    { hour: '9 AM', sales: 1890, orders: 12 },
-    { hour: '10 AM', sales: 1400, orders: 9 },
-    { hour: '11 AM', sales: 2100, orders: 14 },
-    { hour: '12 PM', sales: 3450, orders: 20 },
-    { hour: '1 PM', sales: 2900, orders: 16 },
-    { hour: '2 PM', sales: 1800, orders: 11 },
-    { hour: '3 PM', sales: 2400, orders: 15 },
-    { hour: '4 PM', sales: 3100, orders: 18 },
-    { hour: '5 PM', sales: 2750, orders: 16 },
-    { hour: '6 PM', sales: 2200, orders: 13 },
-    { hour: '7 PM', sales: 1950, orders: 10 },
-  ];
+  // Dynamic Hourly Peak Traffic & Sales calculated directly from the Order Transactions Ledger
+  const hourlyPeakData = useMemo(() => {
+    // 7 AM to 10 PM Operating Hours
+    const hours = [
+      { hourNum: 7, label: '7 AM' },
+      { hourNum: 8, label: '8 AM' },
+      { hourNum: 9, label: '9 AM' },
+      { hourNum: 10, label: '10 AM' },
+      { hourNum: 11, label: '11 AM' },
+      { hourNum: 12, label: '12 PM' },
+      { hourNum: 13, label: '1 PM' },
+      { hourNum: 14, label: '2 PM' },
+      { hourNum: 15, label: '3 PM' },
+      { hourNum: 16, label: '4 PM' },
+      { hourNum: 17, label: '5 PM' },
+      { hourNum: 18, label: '6 PM' },
+      { hourNum: 19, label: '7 PM' },
+      { hourNum: 20, label: '8 PM' },
+      { hourNum: 21, label: '9 PM' },
+      { hourNum: 22, label: '10 PM' },
+    ];
 
-  const maxHourlySales = Math.max(...hourlyPeakData.map((d) => d.sales));
+    return hours.map(({ hourNum, label }) => {
+      const ordersInHour = orders.filter((o) => {
+        const d = new Date(o.createdAt);
+        return d.getHours() === hourNum;
+      });
+
+      const sales = ordersInHour.reduce((sum, o) => sum + o.total, 0);
+      const ordersCount = ordersInHour.length;
+
+      return {
+        hour: label,
+        hourNum,
+        sales,
+        orders: ordersCount,
+      };
+    });
+  }, [orders]);
+
+  const maxHourlySales = useMemo(() => {
+    const max = Math.max(0, ...hourlyPeakData.map((d) => d.sales));
+    return max > 0 ? max : 1;
+  }, [hourlyPeakData]);
+
+  // Dynamic peak period text based on ledger data
+  const peakSlotText = useMemo(() => {
+    const activeSlots = hourlyPeakData.filter((d) => d.sales > 0);
+    if (activeSlots.length === 0) return 'No Traffic Yet';
+    const sorted = [...activeSlots].sort((a, b) => b.sales - a.sales);
+    const top = sorted[0];
+    const nextHour =
+      top.hourNum === 12
+        ? '1 PM'
+        : top.hourNum === 23
+        ? '12 AM'
+        : top.hourNum > 12
+        ? `${top.hourNum - 12 + 1} PM`
+        : `${top.hourNum + 1} AM`;
+    return `Peak: ${top.hour} - ${nextHour}`;
+  }, [hourlyPeakData]);
 
   const exportCSV = () => {
     let csv = 'Order ID,Order Number,Type,Customer,Payment,Subtotal,Discount,Total,Date\n';
@@ -236,37 +279,42 @@ export const AnalyticsDashboard: React.FC = () => {
                 Hourly Traffic & Peak Hours Heatmap
               </h3>
               <p className="text-xs text-gray-500">
-                Identify lunch & afternoon rush periods for barista scheduling
+                Identify lunch & afternoon rush periods dynamically synced with order timestamps
               </p>
             </div>
             <span className="text-xs font-bold text-[#c5a880] font-mono">
-              Peak: 12 PM - 1 PM
+              {peakSlotText}
             </span>
           </div>
 
           {/* Bar Chart Visualizer */}
           <div className="pt-4 flex items-end justify-between gap-1.5 h-48 border-b border-gray-100 dark:border-gray-800 pb-2">
             {hourlyPeakData.map((slot) => {
-              const heightPercent = Math.max(15, (slot.sales / maxHourlySales) * 100);
-              const isPeak = slot.sales >= 3000;
+              const hasSales = slot.sales > 0;
+              const heightPercent = hasSales
+                ? Math.max(12, (slot.sales / maxHourlySales) * 100)
+                : 4;
+              const isPeak = hasSales && slot.sales === maxHourlySales;
 
               return (
-                <div key={slot.hour} className="flex-1 flex flex-col items-center group relative">
+                <div key={slot.hour} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                   {/* Tooltip on hover */}
-                  <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] py-1 px-1.5 rounded font-mono pointer-events-none whitespace-nowrap z-20">
-                    {formatPhp(slot.sales)} ({slot.orders} orders)
+                  <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[10px] py-1 px-1.5 rounded font-mono pointer-events-none whitespace-nowrap z-20 shadow-md">
+                    {slot.hour}: {formatPhp(slot.sales)} ({slot.orders} {slot.orders === 1 ? 'order' : 'orders'})
                   </div>
 
                   <div
-                    className={`w-full rounded-t-lg transition-all ${
-                      isPeak
-                        ? 'bg-[#c5a880] group-hover:bg-[#d8c09d]'
-                        : 'bg-[#ede7dc] dark:bg-[#202026] group-hover:bg-[#c5a880]/60'
+                    className={`w-full rounded-t-md transition-all duration-300 ${
+                      !hasSales
+                        ? 'bg-[#e5ded3] dark:bg-[#1e1e24] group-hover:bg-[#c5a880]/30'
+                        : isPeak
+                        ? 'bg-[#c5a880] group-hover:bg-[#d8c09d] shadow-sm'
+                        : 'bg-[#a3845b] dark:bg-[#b0926b] group-hover:bg-[#c5a880]'
                     }`}
                     style={{ height: `${heightPercent}%` }}
                   ></div>
 
-                  <span className="text-[9px] text-gray-500 mt-2 font-medium">
+                  <span className="text-[9px] text-gray-500 mt-2 font-medium truncate">
                     {slot.hour.replace(' ', '')}
                   </span>
                 </div>
@@ -299,7 +347,9 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500">
-            Coffee & Signature handcrafted drinks lead total daily cafe gross receipts.
+            {orders.length > 0
+              ? 'Real-time category breakdown calculated from all ledger transactions.'
+              : 'No category sales recorded yet today.'}
           </div>
         </div>
 
@@ -348,6 +398,13 @@ export const AnalyticsDashboard: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {topSellingItems.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-gray-400 text-xs">
+                    No best sellers recorded yet today.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
