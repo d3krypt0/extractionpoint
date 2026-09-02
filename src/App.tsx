@@ -118,7 +118,7 @@ const MainLayout: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <BrandLogo variant="horizontal" size="sm" showTagline={true} />
 
-          <div className="flex items-center space-x-4 text-[11px]">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
             <a 
               href="https://instagram.com/ext.point_" 
               target="_blank" 
@@ -126,6 +126,15 @@ const MainLayout: React.FC = () => {
               className="hover:text-[#c5a880] transition-colors"
             >
               Instagram: @ext.point_
+            </a>
+            <span>•</span>
+            <a 
+              href="https://www.tiktok.com/@ext.point" 
+              target="_blank" 
+              rel="noreferrer"
+              className="hover:text-[#c5a880] transition-colors"
+            >
+              TikTok: @ext.point
             </a>
             <span>•</span>
             <a 

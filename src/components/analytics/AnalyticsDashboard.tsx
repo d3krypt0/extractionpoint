@@ -96,19 +96,10 @@ export const AnalyticsDashboard: React.FC = () => {
     }));
   }, [orders]);
 
-  // Dynamic Hourly Peak Traffic & Sales calculated directly from the Order Transactions Ledger
+  // Dynamic Hourly Peak Traffic & Sales calculated directly from the Order Transactions Ledger (4 PM - 12 Midnight)
   const hourlyPeakData = useMemo(() => {
-    // 7 AM to 10 PM Operating Hours
+    // 4 PM to 12 Midnight Cafe Operating Hours
     const hours = [
-      { hourNum: 7, label: '7 AM' },
-      { hourNum: 8, label: '8 AM' },
-      { hourNum: 9, label: '9 AM' },
-      { hourNum: 10, label: '10 AM' },
-      { hourNum: 11, label: '11 AM' },
-      { hourNum: 12, label: '12 PM' },
-      { hourNum: 13, label: '1 PM' },
-      { hourNum: 14, label: '2 PM' },
-      { hourNum: 15, label: '3 PM' },
       { hourNum: 16, label: '4 PM' },
       { hourNum: 17, label: '5 PM' },
       { hourNum: 18, label: '6 PM' },
@@ -116,6 +107,8 @@ export const AnalyticsDashboard: React.FC = () => {
       { hourNum: 20, label: '8 PM' },
       { hourNum: 21, label: '9 PM' },
       { hourNum: 22, label: '10 PM' },
+      { hourNum: 23, label: '11 PM' },
+      { hourNum: 0, label: '12 AM' },
     ];
 
     return hours.map(({ hourNum, label }) => {
@@ -147,15 +140,15 @@ export const AnalyticsDashboard: React.FC = () => {
     if (activeSlots.length === 0) return 'No Traffic Yet';
     const sorted = [...activeSlots].sort((a, b) => b.sales - a.sales);
     const top = sorted[0];
-    const nextHour =
-      top.hourNum === 12
-        ? '1 PM'
-        : top.hourNum === 23
-        ? '12 AM'
-        : top.hourNum > 12
-        ? `${top.hourNum - 12 + 1} PM`
-        : `${top.hourNum + 1} AM`;
-    return `Peak: ${top.hour} - ${nextHour}`;
+
+    const getHourLabel = (h: number) => {
+      if (h === 0 || h === 24) return '12 AM';
+      if (h === 12) return '12 PM';
+      if (h > 12) return `${h - 12} PM`;
+      return `${h} AM`;
+    };
+
+    return `Peak: ${top.hour} - ${getHourLabel((top.hourNum + 1) % 24)}`;
   }, [hourlyPeakData]);
 
   const exportCSV = () => {
@@ -279,7 +272,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 Hourly Traffic & Peak Hours Heatmap
               </h3>
               <p className="text-xs text-gray-500">
-                Identify lunch & afternoon rush periods dynamically synced with order timestamps
+                Identify evening & night rush periods (4 PM - 12 Midnight) dynamically synced with order timestamps
               </p>
             </div>
             <span className="text-xs font-bold text-[#c5a880] font-mono">
